@@ -22,3 +22,20 @@
 - Presently, the project contains an 'engine', 'lib', and 'shaders' directory. Engine contains my source code, lib contains all third party libraries that are in use or planned for use, and shaders will contain shader code for rendering
 - At some point, there will be a separate game files directory, for scripting, map data, and so on. I will likely keep the source of this private to some capacity, but keep an uploaded build of anything playable. I do intend to try and sell the game and having public source slightly defeats that purpose
  
+
+
+### Building
+- My current build process relies on cmake. This is because I develop on multiple platforms (linux, windows) and it just seems like a fine tool.
+```
+# Clone repo
+git clone git@github.com:mmorgan00/ProjectBulldog.git
+cd ProjectBulldog
+# Build
+cmake -S ./ -B ./build
+# This is just how I do it, feel free to run build from build folder then change to bin
+mkdir bin
+cd bin
+cmake --build ../bin
+# Execute 
+./engine
+```
