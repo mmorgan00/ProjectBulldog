@@ -17,3 +17,8 @@
 - I do not have a concrete plan on what is going to be added. 
 - One of the benefits that I am hoping to get out of rolling my own tech is a relatively lightweight tech stack, and only creating what I need.
 
+
+#### Structure
+- Presently, the project contains an 'engine', 'lib', and 'shaders' directory. Engine contains my source code, lib contains all third party libraries that are in use or planned for use, and shaders will contain shader code for rendering
+- At some point, there will be a separate game files directory, for scripting, map data, and so on. I will likely keep the source of this private to some capacity, but keep an uploaded build of anything playable. I do intend to try and sell the game and having public source slightly defeats that purpose
+ 
