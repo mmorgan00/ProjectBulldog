@@ -8,6 +8,10 @@ add_executable (engine
     engine_types.h
     vk_initializers.cpp
     vk_initializers.h
+    vk_descriptors.cpp
+    vk_descriptors.h
+    # vk_pipelines.cpp
+    # vk_pipelines.h
     vk_images.cpp
     vk_images.h
 )
@@ -27,3 +31,59 @@ target_precompile_headers(engine PUBLIC <optional> <vector> <memory> <string> <v
 #   COMMAND_EXPAND_LISTS
 #   )
 
+# Debug target
+add_executable(debug
+    main.cpp
+    engine.cpp
+    engine.h
+    engine_types.h
+    vk_initializers.cpp
+    vk_initializers.h
+    vk_descriptors.cpp
+    vk_descriptors.h
+    # vk_pipelines.cpp
+    # vk_pipelines.h
+    vk_images.cpp
+    vk_images.h
+)
+
+set_target_properties(debug PROPERTIES 
+    CXX_STANDARD 20
+    COMPILE_FLAGS "${CMAKE_CXX_FLAGS_DEBUG}"
+    LINK_FLAGS "${CMAKE_EXE_LINKER_FLAGS_DEBUG}"
+)
+
+target_compile_definitions(debug PUBLIC GLM_FORCE_DEPTH_ZERO_TO_ONE)
+target_include_directories(debug PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+
+target_link_libraries(debug PUBLIC 
+    vma 
+    glm 
+    Vulkan::Vulkan 
+    fmt::fmt 
+    stb_image 
+    SDL2::SDL2 
+    vkbootstrap 
+    imgui 
+    fastgltf::fastgltf
+)
+
+target_precompile_headers(debug PUBLIC 
+    <optional> 
+    <vector> 
+    <memory> 
+    <string> 
+    <vector> 
+    <unordered_map> 
+    <glm/mat4x4.hpp>  
+    <glm/vec4.hpp> 
+    <vulkan/vulkan.h>
+)
+
+# add_custom_command(TARGET engine_debug POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:engine_debug> $<TARGET_FILE_DIR:engine_debug>
+#     COMMAND_EXPAND_LISTS
+# )
+# Add dependency on Shaders target from parent
+add_dependencies(engine Shaders)
+add_dependencies(debug Shaders)

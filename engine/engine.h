@@ -7,6 +7,8 @@
 
 #include <vector>
 
+#include "vk_mem_alloc.h"
+
 //> framedata
 struct FrameData {
   VkSemaphore _swapchainSemaphore, _renderSemaphore;
@@ -14,6 +16,8 @@ struct FrameData {
 
   VkCommandPool _commandPool;
   VkCommandBuffer _mainCommandBuffer;
+
+  DeletionQueue _deletionQueue;
 };
 
 constexpr unsigned int FRAME_OVERLAP = 2;
@@ -23,6 +27,12 @@ class VulkanEngine {
  public:
   bool _isInitialized{false};
   int _frameNumber{0};
+  DeletionQueue _mainDeletionQueue;
+  VmaAllocator _allocator;
+
+  // draw resources
+  AllocatedImage _drawImage;
+  VkExtent2D _drawExtent;
 
   VkExtent2D _windowExtent{1700, 900};
 
@@ -64,6 +74,7 @@ class VulkanEngine {
 
   // draw loop
   void draw();
+  void draw_background(VkCommandBuffer cmd);
 
   // run main loop
   void run();
