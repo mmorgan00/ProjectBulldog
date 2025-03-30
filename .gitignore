@@ -1,4 +1,16 @@
 
-/build
+# Build directories
+build
+bin
+CMakeFiles
+CMakeCache.txt
 
-/bin
+# Clang
+.cache
+
+
+# Shaders must be compiled on target machine
+*.spv
+
+
+
