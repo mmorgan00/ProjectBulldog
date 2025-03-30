@@ -4,6 +4,7 @@
 #pragma once
 
 #include <engine_types.h>
+#include <vk_descriptors.h>
 
 #include <vector>
 
@@ -46,6 +47,11 @@ class VulkanEngine {
   VkSurfaceKHR _surface;        // Vulkan window surface
                                 //< inst_init
 
+  DescriptorAllocator globalDescriptorAllocator;
+
+  VkDescriptorSet _drawImageDescriptors;
+  VkDescriptorSetLayout _drawImageDescriptorLayout;
+
   //> queues
   FrameData _frames[FRAME_OVERLAP];
 
@@ -83,13 +89,10 @@ class VulkanEngine {
 
  private:
   void init_vulkan();
-
   void init_swapchain();
-
   void create_swapchain(uint32_t width, uint32_t height);
   void destroy_swapchain();
-
   void init_commands();
-
   void init_sync_structures();
+  void init_descriptors();
 };
