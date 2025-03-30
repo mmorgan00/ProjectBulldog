@@ -322,8 +322,7 @@ void VulkanEngine::init_swapchain() {
 //> init_cmd
 void VulkanEngine::init_commands() {
   // create a command pool for commands submitted to the graphics queue.
-  // we also want the pool to allow for resetting of individual command
-  // buffers
+  // we also want the pool to allow for resetting of individual command buffers
   VkCommandPoolCreateInfo commandPoolInfo = vkinit::command_pool_create_info(
       _graphicsQueueFamily, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
