@@ -8,6 +8,9 @@
 
 #include <vector>
 
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_vulkan.h"
 #include "vk_mem_alloc.h"
 
 //> framedata
@@ -55,6 +58,11 @@ class VulkanEngine {
   VkPipeline _gradientPipeline;
   VkPipelineLayout _gradientPipelineLayout;
 
+  // Immediates
+  VkFence _immFence;
+  VkCommandBuffer _immCommandBuffer;
+  VkCommandPool _immCommandPool;
+
   //> queues
   FrameData _frames[FRAME_OVERLAP];
 
@@ -82,6 +90,7 @@ class VulkanEngine {
   void cleanup();
 
   // draw loop
+  void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
   void draw();
   void draw_background(VkCommandBuffer cmd);
 
@@ -100,4 +109,6 @@ class VulkanEngine {
   void init_descriptors();
   void init_pipelines();
   void init_background_pipelines();
+  void init_imgui();
+  void draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView);
 };

@@ -12,6 +12,9 @@ VkCommandPoolCreateInfo command_pool_create_info(
 VkCommandBufferAllocateInfo command_buffer_allocate_info(VkCommandPool pool,
                                                          uint32_t count = 1);
 //< init_cmd
+VkRenderingAttachmentInfo attachment_info(
+    VkImageView view, VkClearValue* clear,
+    VkImageLayout layout /*= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL*/);
 
 VkCommandBufferBeginInfo command_buffer_begin_info(
     VkCommandBufferUsageFlags flags = 0);
