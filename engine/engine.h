@@ -13,6 +13,13 @@
 #include "imgui_impl_vulkan.h"
 #include "vk_mem_alloc.h"
 
+struct ComputePushConstants {
+  glm::vec4 data1;
+  glm::vec4 data2;
+  glm::vec4 data3;
+  glm::vec4 data4;
+};
+
 //> framedata
 struct FrameData {
   VkSemaphore _swapchainSemaphore, _renderSemaphore;
