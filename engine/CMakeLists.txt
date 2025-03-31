@@ -10,8 +10,8 @@ add_executable (engine
     vk_initializers.h
     vk_descriptors.cpp
     vk_descriptors.h
-    # vk_pipelines.cpp
-    # vk_pipelines.h
+    vk_pipelines.cpp
+    vk_pipelines.h
     vk_images.cpp
     vk_images.h
 )
@@ -41,8 +41,8 @@ add_executable(debug
     vk_initializers.h
     vk_descriptors.cpp
     vk_descriptors.h
-    # vk_pipelines.cpp
-    # vk_pipelines.h
+    vk_pipelines.cpp
+    vk_pipelines.h
     vk_images.cpp
     vk_images.h
 )
