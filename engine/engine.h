@@ -102,6 +102,9 @@ class VulkanEngine {
   VkExtent2D _swapchainExtent;
   //< swap_init
 
+  VkPipelineLayout _trianglePipelineLayout;
+  VkPipeline _trianglePipeline;
+
   // initializes everything in the engine
   void init();
 
@@ -129,5 +132,7 @@ class VulkanEngine {
   void init_pipelines();
   void init_background_pipelines();
   void init_imgui();
+  void init_triangle_pipeline();
+  void draw_geometry(VkCommandBuffer cmd);
   void draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView);
 };

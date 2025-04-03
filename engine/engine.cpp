@@ -51,7 +51,10 @@ void VulkanEngine::destroy_swapchain() {
 }
 //< destroy_sc
 
-void VulkanEngine::init_pipelines() { init_background_pipelines(); }
+void VulkanEngine::init_pipelines() {
+  init_triangle_pipeline();
+  init_background_pipelines();
+}
 
 void VulkanEngine::init_background_pipelines() {
   VkPipelineLayoutCreateInfo computeLayout{};
@@ -139,6 +142,67 @@ void VulkanEngine::init_background_pipelines() {
   });
 }
 
+void VulkanEngine::init_triangle_pipeline() {
+  VkShaderModule triangleFragShader;
+  if (!vkutil::load_shader_module("../shaders/colored_triangle.frag.spv",
+                                  _device, &triangleFragShader)) {
+    fmt::print("Error when building the triangle fragment shader module");
+  } else {
+    fmt::print("Triangle fragment shader succesfully loaded");
+  }
+
+  VkShaderModule triangleVertexShader;
+  if (!vkutil::load_shader_module("../shaders/colored_triangle.vert.spv",
+                                  _device, &triangleVertexShader)) {
+    fmt::print("Error when building the triangle vertex shader module");
+  } else {
+    fmt::print("Triangle vertex shader succesfully loaded");
+  }
+
+  // build the pipeline layout that controls the inputs/outputs of the shader
+  // we are not using descriptor sets or other systems yet, so no need to use
+  // anything other than empty default
+  VkPipelineLayoutCreateInfo pipeline_layout_info =
+      vkinit::pipeline_layout_create_info();
+  VK_CHECK(vkCreatePipelineLayout(_device, &pipeline_layout_info, nullptr,
+                                  &_trianglePipelineLayout));
+
+  PipelineBuilder pipelineBuilder;
+
+  // use the triangle layout we created
+  pipelineBuilder._pipelineLayout = _trianglePipelineLayout;
+  // connecting the vertex and pixel shaders to the pipeline
+  pipelineBuilder.set_shaders(triangleVertexShader, triangleFragShader);
+  // it will draw triangles
+  pipelineBuilder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+  // filled triangles
+  pipelineBuilder.set_polygon_mode(VK_POLYGON_MODE_FILL);
+  // no backface culling
+  pipelineBuilder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+  // no multisampling
+  pipelineBuilder.set_multisampling_none();
+  // no blending
+  pipelineBuilder.disable_blending();
+  // no depth testing
+  pipelineBuilder.disable_depthtest();
+
+  // connect the image format we will draw into, from draw image
+  pipelineBuilder.set_color_attachment_format(_drawImage.imageFormat);
+  pipelineBuilder.set_depth_format(VK_FORMAT_UNDEFINED);
+
+  // finally build the pipeline
+  _trianglePipeline = pipelineBuilder.build_pipeline(_device);
+
+  // clean structures
+  vkDestroyShaderModule(_device, triangleFragShader, nullptr);
+  vkDestroyShaderModule(_device, triangleVertexShader, nullptr);
+
+  _mainDeletionQueue.push_function([&]() {
+    vkDestroyPipelineLayout(_device, _trianglePipelineLayout, nullptr);
+    vkDestroyPipeline(_device, _trianglePipeline, nullptr);
+  });
+}
+
 void VulkanEngine::init_descriptors() {
   // create a descriptor pool that will hold 10 sets with 1 image each
   std::vector<DescriptorAllocator::PoolSizeRatio> sizes = {
@@ -211,19 +275,61 @@ void VulkanEngine::cleanup() {
   }
 }
 
+void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
+  // begin a render pass  connected to our draw image
+  VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(
+      _drawImage.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+  VkRenderingInfo renderInfo =
+      vkinit::rendering_info(_drawExtent, &colorAttachment, nullptr);
+  vkCmdBeginRendering(cmd, &renderInfo);
+
+  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _trianglePipeline);
+
+  // set dynamic viewport and scissor
+  VkViewport viewport = {};
+  viewport.x = 0;
+  viewport.y = 0;
+  viewport.width = _drawExtent.width;
+  viewport.height = _drawExtent.height;
+  viewport.minDepth = 0.f;
+  viewport.maxDepth = 1.f;
+
+  vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+  VkRect2D scissor = {};
+  scissor.offset.x = 0;
+  scissor.offset.y = 0;
+  scissor.extent.width = _drawExtent.width;
+  scissor.extent.height = _drawExtent.height;
+
+  vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+  // launch a draw command to draw 3 vertices
+  vkCmdDraw(cmd, 3, 1, 0, 0);
+
+  vkCmdEndRendering(cmd);
+}
+
 void VulkanEngine::draw_background(VkCommandBuffer cmd) {
-  // make a clear-color from frame number. This will flash with a 120 frame
-  // period.
-  VkClearColorValue clearValue;
-  float flash = std::abs(std::sin(_frameNumber / 120.f));
-  clearValue = {{0.0f, 0.0f, flash, 1.0f}};
+  ComputeEffect& effect = backgroundEffects[currentBackgroundEffect];
 
-  VkImageSubresourceRange clearRange =
-      vkinit::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT);
+  // bind the background compute pipeline
+  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, effect.pipeline);
 
-  // clear image
-  vkCmdClearColorImage(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL,
-                       &clearValue, 1, &clearRange);
+  // bind the descriptor set containing the draw image for the compute pipeline
+  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+                          _gradientPipelineLayout, 0, 1, &_drawImageDescriptors,
+                          0, nullptr);
+
+  vkCmdPushConstants(cmd, _gradientPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT,
+                     0, sizeof(ComputePushConstants), &effect.data);
+  // execute the compute pipeline dispatch. We are using 16x16 workgroup size so
+  // we need to divide by it
+  vkCmdDispatch(cmd, std::ceil(_drawExtent.width / 16.0),
+                std::ceil(_drawExtent.height / 16.0),
+                1);  // transition the draw image and the swapchain image into
+                     // their correct
 }
 
 void VulkanEngine::draw() {
@@ -267,26 +373,22 @@ void VulkanEngine::draw() {
   vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_UNDEFINED,
                            VK_IMAGE_LAYOUT_GENERAL);
 
-  // bind the gradient drawing compute pipeline
-  // bind the gradient drawing compute pipeline
-  ComputeEffect& effect = backgroundEffects[currentBackgroundEffect];
+  draw_background(cmd);
 
-  // bind the background compute pipeline
-  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, effect.pipeline);
+  vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL,
+                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-  // bind the descriptor set containing the draw image for the compute pipeline
-  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-                          _gradientPipelineLayout, 0, 1, &_drawImageDescriptors,
-                          0, nullptr);
+  draw_geometry(cmd);
 
-  vkCmdPushConstants(cmd, _gradientPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT,
-                     0, sizeof(ComputePushConstants), &effect.data);
-  // execute the compute pipeline dispatch. We are using 16x16 workgroup size so
-  // we need to divide by it
-  vkCmdDispatch(cmd, std::ceil(_drawExtent.width / 16.0),
-                std::ceil(_drawExtent.height / 16.0),
-                1);  // transition the draw image and the swapchain image into
-                     // their correct
+  // transtion the draw image and the swapchain image into their correct
+  // transfer layouts
+  vkutil::transition_image(cmd, _drawImage.image,
+                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                           VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+  vkutil::transition_image(cmd, _swapchainImages[swapchainImageIndex],
+                           VK_IMAGE_LAYOUT_UNDEFINED,
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
   // transfer layouts
   vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL,
                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
