@@ -7,6 +7,7 @@
 #include <vk_images.h>
 #include <vk_initializers.h>
 #include <vk_pipelines.h>
+#include <vulkan/vulkan_core.h>
 
 #include <array>
 #include <chrono>
@@ -40,6 +41,33 @@ void VulkanEngine::init() {
   _isInitialized = true;
 }
 //< init_fn
+
+AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage,
+                              VkBufferUsageFlags usage,
+                              VmaMemoryUsage memoryUsage) {
+  // Allocate buffer
+  VkBufferCreateInfo bufferInfo = {.sType =
+                                       VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+  bufferInfo.pNext = nullptr;
+  bufferInfo.size = allocSize;
+
+  VmaAllocationCreateInfo vmaallocInfo = {};
+  vmaallocInfo.usage = memoryUsage;
+  vmaallocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+  AllocatedBuffer newBuffer;
+
+  // allocate the buffer
+  VK_CHECK(vmaCreateBuffer(_allocator, &bufferInfo, &vmaallocInfo,
+                           &newBuffer.buffer, &newBuffer.allocation,
+                           &newBuffer.info));
+
+  return newBuffer;
+}
+
+void VulkanEngine::destroy_buffer(const AllocatedBuffer& buffer) {
+  vmaDestroyBuffer(_allocator, buffer.buffer, buffer.allocation);
+}
+
 //> destroy_sc
 void VulkanEngine::destroy_swapchain() {
   vkDestroySwapchainKHR(_device, _swapchain, nullptr);

@@ -16,6 +16,12 @@
 #include <string>
 #include <vector>
 
+struct AllocatedBuffer {
+  VkBuffer buffer;
+  VmaAllocation allocation;
+  VmaAllocationInfo info;
+};
+
 struct AllocatedImage {
   VkImage image;
   VkImageView imageView;

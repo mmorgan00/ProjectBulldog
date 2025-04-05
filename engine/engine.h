@@ -121,6 +121,11 @@ class VulkanEngine {
 
   bool stop_rendering{false};
 
+  AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage,
+                                VmaMemoryUsage memoryUsage);
+
+  void destroy_buffer(const AllocatedBuffer& buffer);
+
  private:
   void init_vulkan();
   void init_swapchain();
