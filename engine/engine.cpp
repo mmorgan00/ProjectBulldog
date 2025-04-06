@@ -873,10 +873,13 @@ void VulkanEngine::init_swapchain() {
       vkCreateImageView(_device, &rview_info, nullptr, &_drawImage.imageView));
 
   // add to deletion queues
-  _mainDeletionQueue.push_function([this]() {
-    vkDestroyImageView(_device, _drawImage.imageView, nullptr);
-    vmaDestroyImage(_allocator, _drawImage.image, _drawImage.allocation);
-  });
+  _mainDeletionQueue.push_function(
+      [_drawImageImageView = _drawImage.imageView,
+       _drawImageImage = _drawImage.image, _allocator = _allocator,
+       _device = _device, _drawImageAllocation = _drawImage.allocation]() {
+        vkDestroyImageView(_device, _drawImageImageView, nullptr);
+        vmaDestroyImage(_allocator, _drawImageImage, _drawImageAllocation);
+      });
 }
 //< init_swap
 
@@ -973,10 +976,11 @@ void VulkanEngine::init_imgui() {
   ImGui_ImplVulkan_CreateFontsTexture();
 
   // add the destroy the imgui created structures
-  _mainDeletionQueue.push_function([=]() {
-    ImGui_ImplVulkan_Shutdown();
-    vkDestroyDescriptorPool(_device, imguiPool, nullptr);
-  });
+  _mainDeletionQueue.push_function(
+      [_device = _device, imguiPool = imguiPool]() {
+        ImGui_ImplVulkan_Shutdown();
+        vkDestroyDescriptorPool(_device, imguiPool, nullptr);
+      });
 }
 
 void VulkanEngine::draw_imgui(VkCommandBuffer cmd,
