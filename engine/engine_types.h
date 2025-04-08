@@ -15,7 +15,6 @@
 #include <span>
 #include <string>
 #include <vector>
-
 struct AllocatedBuffer {
   VkBuffer buffer;
   VmaAllocation allocation;
@@ -42,6 +41,18 @@ struct GPUMeshBuffers {
 struct GPUDrawPushConstants {
   glm::mat4 worldMatrix;
   VkDeviceAddress vertexBuffer;
+};
+
+struct GeoSurface {
+  uint32_t startIndex;
+  uint32_t count;
+};
+
+struct MeshAsset {
+  std::string name;
+
+  std::vector<GeoSurface> surfaces;
+  GPUMeshBuffers meshBuffers;
 };
 
 struct AllocatedImage {

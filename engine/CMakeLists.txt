@@ -14,6 +14,8 @@ add_executable (engine
     vk_pipelines.h
     vk_images.cpp
     vk_images.h
+    vk_loader.cpp
+    vk_loader.h
 )
 
 
@@ -45,6 +47,9 @@ add_executable(debug
     vk_pipelines.h
     vk_images.cpp
     vk_images.h
+    vk_loader.cpp
+    vk_loader.h
+
 )
 
 set_target_properties(debug PROPERTIES 

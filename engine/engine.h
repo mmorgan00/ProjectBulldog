@@ -55,6 +55,7 @@ class VulkanEngine {
 
   // draw resources
   AllocatedImage _drawImage;
+  AllocatedImage _depthImage;
   VkExtent2D _drawExtent;
 
   VkExtent2D _windowExtent{1700, 900};
@@ -110,6 +111,7 @@ class VulkanEngine {
   VkPipeline _meshPipeline;
 
   GPUMeshBuffers rectangle;
+  std::vector<std::shared_ptr<MeshAsset>> testMeshes;
 
   void init_mesh_pipeline();
   //<mesh pipeline
@@ -124,6 +126,9 @@ class VulkanEngine {
   void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
   void draw();
   void draw_background(VkCommandBuffer cmd);
+
+  GPUMeshBuffers uploadMesh(std::span<uint32_t> indices,
+                            std::span<Vertex> vertices);
 
   // run main loop
   void run();
@@ -147,7 +152,5 @@ class VulkanEngine {
   AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage,
                                 VmaMemoryUsage memoryUsage);
   void destroy_buffer(const AllocatedBuffer& buffer);
-  GPUMeshBuffers uploadMesh(std::span<uint32_t> indices,
-                            std::span<Vertex> vertices);
   void init_default_data();
 };
