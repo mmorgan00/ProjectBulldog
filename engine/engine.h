@@ -103,14 +103,10 @@ class VulkanEngine {
   VkExtent2D _swapchainExtent;
   //< swap_init
 
-  VkPipelineLayout _trianglePipelineLayout;
-  VkPipeline _trianglePipeline;
-
   //< mesh pipeline
   VkPipelineLayout _meshPipelineLayout;
   VkPipeline _meshPipeline;
 
-  GPUMeshBuffers rectangle;
   std::vector<std::shared_ptr<MeshAsset>> testMeshes;
 
   void init_mesh_pipeline();
@@ -146,7 +142,6 @@ class VulkanEngine {
   void init_pipelines();
   void init_background_pipelines();
   void init_imgui();
-  void init_triangle_pipeline();
   void draw_geometry(VkCommandBuffer cmd);
   void draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView);
   AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage,
