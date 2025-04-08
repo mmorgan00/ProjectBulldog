@@ -25,7 +25,8 @@ void VulkanEngine::init() {
   // We initialize SDL and create a window with it.
   SDL_Init(SDL_INIT_VIDEO);
 
-  SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN);
+  SDL_WindowFlags window_flags =
+      (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
 
   _window = SDL_CreateWindow("Vulkan Engine", SDL_WINDOWPOS_UNDEFINED,
                              SDL_WINDOWPOS_UNDEFINED, _windowExtent.width,
@@ -471,6 +472,12 @@ void VulkanEngine::draw_background(VkCommandBuffer cmd) {
 }
 
 void VulkanEngine::draw() {
+  _drawExtent.height =
+      std::min(_swapchainExtent.height, _drawImage.imageExtent.height) *
+      renderScale;
+  _drawExtent.width =
+      std::min(_swapchainExtent.width, _drawImage.imageExtent.width) *
+      renderScale;
   //> draw_1
   // wait until the gpu has finished rendering the last frame. Timeout of 1
   // second
@@ -483,10 +490,13 @@ void VulkanEngine::draw() {
   //> draw_2
   // request image from the swapchain
   uint32_t swapchainImageIndex;
-  VK_CHECK(vkAcquireNextImageKHR(_device, _swapchain, 1000000000,
-                                 get_current_frame()._swapchainSemaphore,
-                                 nullptr, &swapchainImageIndex));
-  //< draw_2
+  VkResult e = vkAcquireNextImageKHR(_device, _swapchain, 1000000000,
+                                     get_current_frame()._swapchainSemaphore,
+                                     nullptr, &swapchainImageIndex);
+  if (e == VK_ERROR_OUT_OF_DATE_KHR) {
+    resize_requested = true;
+    return;
+  }  //< draw_2
 
   //> draw_3
   // naming it cmd for shorter writing
@@ -501,9 +511,6 @@ void VulkanEngine::draw() {
   VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(
       VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
   //< Record command buffer
-  _drawExtent.width = _drawImage.imageExtent.width;
-  _drawExtent.height = _drawImage.imageExtent.height;
-
   VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
   // transition our main draw image into general layout so we can write into it
@@ -597,8 +604,10 @@ void VulkanEngine::draw() {
 
   presentInfo.pImageIndices = &swapchainImageIndex;
 
-  VK_CHECK(vkQueuePresentKHR(_graphicsQueue, &presentInfo));
-
+  VkResult presentResult = vkQueuePresentKHR(_graphicsQueue, &presentInfo);
+  if (presentResult == VK_ERROR_OUT_OF_DATE_KHR) {
+    resize_requested = true;
+  }
   // increase the number of frames drawn
   _frameNumber++;
 
@@ -643,6 +652,9 @@ void VulkanEngine::run() {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
       continue;
     }
+    if (resize_requested) {
+      resize_swapchain();
+    }
     // imgui new frame
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplSDL2_NewFrame();
@@ -660,7 +672,10 @@ void VulkanEngine::run() {
       ImGui::InputFloat4("data2", (float*)&selected.data.data2);
       ImGui::InputFloat4("data3", (float*)&selected.data.data3);
       ImGui::InputFloat4("data4", (float*)&selected.data.data4);
+
+      ImGui::SliderFloat("Render Scale", &renderScale, 0.3f, 1.f);
     }
+
     ImGui::End();
 
     ImGui::Render();
@@ -1005,3 +1020,18 @@ void VulkanEngine::init_sync_structures() {
       [this]() { vkDestroyFence(_device, _immFence, nullptr); });
 }
 //< init_sync
+
+void VulkanEngine::resize_swapchain() {
+  vkDeviceWaitIdle(_device);
+
+  destroy_swapchain();
+
+  int w, h;
+  SDL_GetWindowSize(_window, &w, &h);
+  _windowExtent.width = w;
+  _windowExtent.height = h;
+
+  create_swapchain(_windowExtent.width, _windowExtent.height);
+
+  resize_requested = false;
+}

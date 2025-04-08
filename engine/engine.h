@@ -46,6 +46,7 @@ constexpr unsigned int FRAME_OVERLAP = 2;
 class VulkanEngine {
  public:
   bool _isInitialized{false};
+  bool resize_requested{false};
   int _frameNumber{0};
   DeletionQueue _mainDeletionQueue;
   VmaAllocator _allocator;
@@ -57,6 +58,7 @@ class VulkanEngine {
   AllocatedImage _drawImage;
   AllocatedImage _depthImage;
   VkExtent2D _drawExtent;
+  float renderScale = 1.f;
 
   VkExtent2D _windowExtent{1700, 900};
 
@@ -118,6 +120,7 @@ class VulkanEngine {
   // shuts down the engine
   void cleanup();
 
+  void resize_swapchain();
   // draw loop
   void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
   void draw();
