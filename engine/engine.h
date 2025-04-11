@@ -38,6 +38,7 @@ struct FrameData {
   VkCommandBuffer _mainCommandBuffer;
 
   DeletionQueue _deletionQueue;
+  DescriptorAllocatorGrowable _frameDescriptors;
 };
 
 constexpr unsigned int FRAME_OVERLAP = 2;
@@ -63,6 +64,10 @@ class VulkanEngine {
   VkExtent2D _windowExtent{1700, 900};
 
   struct SDL_Window* _window{nullptr};
+
+  GPUSceneData sceneData;
+
+  VkDescriptorSetLayout _gpuSceneDataDescriptorLayout;
 
   //> inst_init
   VkInstance _instance;                       // Vulkan library handle

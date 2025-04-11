@@ -15,6 +15,16 @@
 #include <span>
 #include <string>
 #include <vector>
+
+struct GPUSceneData {
+  glm::mat4 view;
+  glm::mat4 proj;
+  glm::mat4 viewproj;
+  glm::vec4 ambientColor;
+  glm::vec4 sunlightDirection;  // w for sun power
+  glm::vec4 sunlightColor;
+};
+
 struct AllocatedBuffer {
   VkBuffer buffer;
   VmaAllocation allocation;
