@@ -16,6 +16,40 @@
 #include <string>
 #include <vector>
 
+struct RenderObject {
+    uint32_t indexCount;
+    uint32_t firstIndex;
+    VkBuffer indexBuffer;
+
+    MaterialInstance* material;
+
+    glm::mat4 transform;
+    VkDeviceAddress vertexBufferAddress;
+};
+
+// base class for a renderable dynamic object
+class IRenderable {
+
+    virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx) = 0;
+};
+
+enum class MaterialPass :uint8_t {
+    MainColor,
+    Transparent,
+    Other
+};
+struct MaterialPipeline {
+    VkPipeline pipeline;
+    VkPipelineLayout layout;
+};
+
+struct MaterialInstance {
+    MaterialPipeline* pipeline;
+    VkDescriptorSet materialSet;
+    MaterialPass passType;
+};
+
+
 struct GPUSceneData {
   glm::mat4 view;
   glm::mat4 proj;
