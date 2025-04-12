@@ -67,7 +67,24 @@ class VulkanEngine {
 
   GPUSceneData sceneData;
 
+
+  //<Image management
+  AllocatedImage create_image(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
+  AllocatedImage create_image(void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usages, bool mipmapped = false);
+  void destroy_image(const AllocatedImage& img);
+  //>Image management
+
+  AllocatedImage _whiteImage;
+  AllocatedImage _blackImage;
+  AllocatedImage _greyImage;
+  AllocatedImage _errorCheckerboardImage;
+
+  VkSampler _defaultSamplerLinear;
+  VkSampler _defaultSamplerNearest;
+
+
   VkDescriptorSetLayout _gpuSceneDataDescriptorLayout;
+  VkDescriptorSetLayout _singleImageDescriptorLayout;
 
   //> inst_init
   VkInstance _instance;                       // Vulkan library handle
