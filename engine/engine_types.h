@@ -16,6 +16,23 @@
 #include <string>
 #include <vector>
 
+enum class MaterialPass :uint8_t {
+  MainColor,
+  Transparent,
+  Other
+};
+struct MaterialPipeline {
+  VkPipeline pipeline;
+  VkPipelineLayout layout;
+};
+
+struct MaterialInstance {
+  MaterialPipeline* pipeline;
+  VkDescriptorSet materialSet;
+  MaterialPass passType;
+};
+
+
 struct GPUSceneData {
   glm::mat4 view;
   glm::mat4 proj;
