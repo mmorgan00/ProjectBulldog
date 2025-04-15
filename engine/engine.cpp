@@ -254,13 +254,13 @@ void VulkanEngine::init_background_pipelines() {
 
 	// layout code
 	VkShaderModule gradientShader;
-	if (!vkutil::load_shader_module("../shaders/gradient_color.comp.spv", _device,
+	if (!vkutil::load_shader_module("../../shaders/gradient_color.comp.spv", _device,
 		&gradientShader)) {
 		fmt::print("Error when building the compute shader \n");
 	}
 
 	VkShaderModule skyShader;
-	if (!vkutil::load_shader_module("../shaders/sky.comp.spv", _device,
+	if (!vkutil::load_shader_module("../../shaders/sky.comp.spv", _device,
 		&skyShader)) {
 		fmt::print("Error when building the compute shader \n");
 	}
@@ -324,7 +324,7 @@ void VulkanEngine::init_background_pipelines() {
 
 void VulkanEngine::init_mesh_pipeline() {
 	VkShaderModule triangleFragShader;
-	if (!vkutil::load_shader_module("../shaders/tex_image.frag.spv",
+	if (!vkutil::load_shader_module("../../shaders/tex_image.frag.spv",
 		_device, &triangleFragShader)) {
 		fmt::print("Error when building the triangle fragment shader module");
 	}
@@ -333,7 +333,7 @@ void VulkanEngine::init_mesh_pipeline() {
 	}
 
 	VkShaderModule triangleVertexShader;
-	if (!vkutil::load_shader_module("../shaders/colored_triangle_mesh.vert.spv",
+	if (!vkutil::load_shader_module("../../shaders/colored_triangle_mesh.vert.spv",
 		_device, &triangleVertexShader)) {
 		fmt::print("Error when building the triangle vertex shader module");
 	}
@@ -393,7 +393,7 @@ void VulkanEngine::init_mesh_pipeline() {
 }
 
 void VulkanEngine::init_default_data() {
-	testMeshes = loadGltfMeshes(this, "../assets/basicmesh.glb").value();
+	testMeshes = loadGltfMeshes(this, "../../assets/basicmesh.glb").value();
 	//3 default textures, white, grey, black. 1 pixel each
 	uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
 	_whiteImage = create_image((void*)&white, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
