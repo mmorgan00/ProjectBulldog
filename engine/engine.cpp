@@ -595,6 +595,15 @@ void VulkanEngine::update_scene()
 	// camera projection
 	sceneData.proj = glm::perspective(glm::radians(70.f), (float)_windowExtent.width / (float)_windowExtent.height, 10000.f, 0.1f);
 
+	for (int x = -3; x < 3; x++) {
+
+		glm::mat4 scale = glm::scale(glm::vec3{0.2});
+		glm::mat4 translation =  glm::translate(glm::vec3{x, 1, 0});
+
+		loadedNodes["Cube"]->Draw(translation * scale, mainDrawContext);
+	}
+
+
 	// invert the Y direction on projection matrix so that we are more similar
 	// to opengl and gltf axis
 	sceneData.proj[1][1] *= -1;
