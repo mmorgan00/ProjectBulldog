@@ -43,6 +43,61 @@ struct FrameData {
 
 constexpr unsigned int FRAME_OVERLAP = 2;
 //< framedata
+// Forward declare to include in struct
+struct VulkanEngine;
+
+struct GLTFMetallic_Roughness {
+	MaterialPipeline opaquePipeline;
+	MaterialPipeline transparentPipeline;
+
+	VkDescriptorSetLayout materialLayout;
+
+	struct MaterialConstants {
+		glm::vec4 colorFactors;
+		glm::vec4 metal_rough_factors;
+		//padding, we need it anyway for uniform buffers
+		glm::vec4 extra[14];
+	};
+
+	struct MaterialResources {
+		AllocatedImage colorImage;
+		VkSampler colorSampler;
+		AllocatedImage metalRoughImage;
+		VkSampler metalRoughSampler;
+		VkBuffer dataBuffer;
+		uint32_t dataBufferOffset;
+	};
+
+	DescriptorWriter writer;
+
+	void build_pipelines(VulkanEngine* engine);
+	void clear_resources(VkDevice device);
+
+	MaterialInstance write_material(VkDevice device, MaterialPass pass, const MaterialResources& resources, DescriptorAllocatorGrowable& descriptorAllocator);
+};
+
+struct RenderObject {
+	uint32_t indexCount;
+	uint32_t firstIndex;
+	VkBuffer indexBuffer;
+
+	MaterialInstance* material;
+
+	glm::mat4 transform;
+	VkDeviceAddress vertexBufferAddress;
+};
+
+struct DrawContext {
+	std::vector<RenderObject> OpaqueSurfaces;
+};
+
+struct MeshNode : public Node {
+
+	std::shared_ptr<MeshAsset> mesh;
+
+	virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx) override;
+};
+
 
 class VulkanEngine {
  public:
@@ -66,6 +121,9 @@ class VulkanEngine {
   struct SDL_Window* _window{nullptr};
 
   GPUSceneData sceneData;
+  DrawContext mainDrawContext;
+  std::unordered_map<std::string, std::shared_ptr<Node>> loadedNodes; 
+
 
 
   //<Image management
@@ -94,7 +152,7 @@ class VulkanEngine {
   VkSurfaceKHR _surface;        // Vulkan window surface
                                 //< inst_init
 
-  DescriptorAllocator globalDescriptorAllocator;
+  DescriptorAllocatorGrowable globalDescriptorAllocator;
 
   VkDescriptorSet _drawImageDescriptors;
   VkDescriptorSetLayout _drawImageDescriptorLayout;
@@ -132,6 +190,9 @@ class VulkanEngine {
   VkPipeline _meshPipeline;
 
   std::vector<std::shared_ptr<MeshAsset>> testMeshes;
+  MaterialInstance defaultData;
+  GLTFMetallic_Roughness metalRoughMaterial;
+
 
   void init_mesh_pipeline();
   //<mesh pipeline
@@ -153,6 +214,7 @@ class VulkanEngine {
 
   // run main loop
   void run();
+  void update_scene();
 
   bool stop_rendering{false};
 
