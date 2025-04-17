@@ -76,6 +76,28 @@ struct GLTFMetallic_Roughness {
 	MaterialInstance write_material(VkDevice device, MaterialPass pass, const MaterialResources& resources, DescriptorAllocatorGrowable& descriptorAllocator);
 };
 
+struct RenderObject {
+	uint32_t indexCount;
+	uint32_t firstIndex;
+	VkBuffer indexBuffer;
+
+	MaterialInstance* material;
+
+	glm::mat4 transform;
+	VkDeviceAddress vertexBufferAddress;
+};
+
+struct DrawContext {
+	std::vector<RenderObject> OpaqueSurfaces;
+};
+
+struct MeshNode : public Node {
+
+	std::shared_ptr<MeshAsset> mesh;
+
+	virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx) override;
+};
+
 
 class VulkanEngine {
  public:
@@ -99,6 +121,9 @@ class VulkanEngine {
   struct SDL_Window* _window{nullptr};
 
   GPUSceneData sceneData;
+  DrawContext mainDrawContext;
+  std::unordered_map<std::string, std::shared_ptr<Node>> loadedNodes; 
+
 
 
   //<Image management
@@ -189,6 +214,7 @@ class VulkanEngine {
 
   // run main loop
   void run();
+  void update_scene();
 
   bool stop_rendering{false};
 
