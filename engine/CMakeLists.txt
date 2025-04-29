@@ -16,7 +16,7 @@ add_executable (engine
     vk_images.h
     vk_loader.cpp
     vk_loader.h
-)
+ "camera.h" "camera.cpp")
 
 
 set_property(TARGET engine PROPERTY CXX_STANDARD 20)
@@ -50,7 +50,7 @@ add_executable(debug
     vk_loader.cpp
     vk_loader.h
 
-)
+ "camera.h" "camera.cpp")
 
 set_target_properties(debug PROPERTIES 
     CXX_STANDARD 20

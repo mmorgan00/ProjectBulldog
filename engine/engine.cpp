@@ -41,6 +41,13 @@ void VulkanEngine::init() {
 	init_pipelines();
 	init_imgui();
 	init_default_data();
+	
+	mainCamera.velocity = glm::vec3(0.f);
+	mainCamera.position = glm::vec3(0, 0, 5);
+	mainCamera.position = glm::vec3(0);
+	mainCamera.yaw = 0;
+
+
 	// everything went fine
 	_isInitialized = true;
 }
@@ -587,13 +594,25 @@ void VulkanEngine::cleanup() {
 
 void VulkanEngine::update_scene()
 {
+
+	mainCamera.update();
+
+	glm::mat4 view = mainCamera.getViewMatrix();
+
+	// camera projection
+	glm::mat4 projection = glm::perspective(glm::radians(70.f), (float)_windowExtent.width / (float)_windowExtent.height, 10000.f, 0.1f);
+
+	// invert the Y direction on projection matrix so that we are more similar
+	// to opengl and gltf axis
+	projection[1][1] *= -1;
+
+	sceneData.view = view;
+	sceneData.proj = projection;
+	sceneData.viewproj = projection * view;
+
 	mainDrawContext.OpaqueSurfaces.clear();
 
 	loadedNodes["Suzanne"]->Draw(glm::mat4{1.f}, mainDrawContext);	
-
-	sceneData.view = glm::translate(glm::vec3{ 0,0,-5 });
-	// camera projection
-	sceneData.proj = glm::perspective(glm::radians(70.f), (float)_windowExtent.width / (float)_windowExtent.height, 10000.f, 0.1f);
 
 	for (int x = -3; x < 3; x++) {
 
@@ -602,12 +621,6 @@ void VulkanEngine::update_scene()
 
 		loadedNodes["Cube"]->Draw(translation * scale, mainDrawContext);
 	}
-
-
-	// invert the Y direction on projection matrix so that we are more similar
-	// to opengl and gltf axis
-	sceneData.proj[1][1] *= -1;
-	sceneData.viewproj = sceneData.proj * sceneData.view;
 
 	//some default lighting parameters
 	sceneData.ambientColor = glm::vec4(.1f);
@@ -677,10 +690,6 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
 	push_constants.worldMatrix = projection * view;
 	push_constants.vertexBuffer = testMeshes[2]->meshBuffers.vertexBufferAddress;
 
-	vkCmdPushConstants(cmd, _meshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-	vkCmdBindIndexBuffer(cmd, testMeshes[2]->meshBuffers.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-	vkCmdDrawIndexed(cmd, testMeshes[2]->surfaces[0].count, 1, testMeshes[2]->surfaces[0].startIndex, 0, 0);
 
 	for (const RenderObject& draw : mainDrawContext.OpaqueSurfaces) {
 
@@ -879,6 +888,8 @@ void VulkanEngine::run() {
 		while (SDL_PollEvent(&e) != 0) {
 			// close the window when user alt-f4s or clicks the X button
 			if (e.type == SDL_QUIT) bQuit = true;
+
+			mainCamera.processSDLEvent(e);
 
 			// Handle keypress
 			if (e.type == SDL_KEYDOWN) {

@@ -1,10 +1,9 @@
-﻿// vulkan_guide.h : Include file for standard system include files,
-// or project specific include files.
-
+﻿
 #pragma once
 
 #include <engine_types.h>
 #include <vk_descriptors.h>
+#include <camera.h>
 
 #include <vector>
 
@@ -106,6 +105,8 @@ class VulkanEngine {
   int _frameNumber{0};
   DeletionQueue _mainDeletionQueue;
   VmaAllocator _allocator;
+
+  Camera mainCamera;
 
   std::vector<ComputeEffect> backgroundEffects;
   int currentBackgroundEffect{0};
