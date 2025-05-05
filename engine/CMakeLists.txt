@@ -27,11 +27,12 @@ target_link_libraries(engine PUBLIC vma glm Vulkan::Vulkan fmt::fmt stb_image SD
 
 target_precompile_headers(engine PUBLIC <optional> <vector> <memory> <string> <vector> <unordered_map> <glm/mat4x4.hpp>  <glm/vec4.hpp> <vulkan/vulkan.h>)
 
-
-# add_custom_command(TARGET engine POST_BUILD
-#   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:engine> $<TARGET_FILE_DIR:engine>
-#   COMMAND_EXPAND_LISTS
-#   )
+if(WIN32)
+ add_custom_command(TARGET engine POST_BUILD
+   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:engine> $<TARGET_FILE_DIR:engine>
+   COMMAND_EXPAND_LISTS
+  )
+endif()
 
 # Debug target
 add_executable(debug
@@ -84,11 +85,12 @@ target_precompile_headers(debug PUBLIC
     <glm/vec4.hpp> 
     <vulkan/vulkan.h>
 )
-
-# add_custom_command(TARGET engine_debug POST_BUILD
-#     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:engine_debug> $<TARGET_FILE_DIR:engine_debug>
-#     COMMAND_EXPAND_LISTS
-# )
+if(WIN32)
+ add_custom_command(TARGET debug POST_BUILD
+     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:debug> $<TARGET_FILE_DIR:debug>
+     COMMAND_EXPAND_LISTS
+ )
+ endif()
 # Add dependency on Shaders target from parent
 add_dependencies(engine Shaders)
 add_dependencies(debug Shaders)
