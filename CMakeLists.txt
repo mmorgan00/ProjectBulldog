@@ -7,8 +7,8 @@ find_package(Vulkan REQUIRED)
 
 add_subdirectory(lib)
 
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
-set (CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build/bin")
+set (CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build/bin")
 
 add_subdirectory(engine)
 
@@ -19,6 +19,9 @@ file(GLOB_RECURSE GLSL_SOURCE_FILES
     "${PROJECT_SOURCE_DIR}/shaders/*.frag"
     "${PROJECT_SOURCE_DIR}/shaders/*.vert"
     "${PROJECT_SOURCE_DIR}/shaders/*.comp"
+    "${PROJECT_SOURCE_DIR}/shaders/*.frag.glsl"
+    "${PROJECT_SOURCE_DIR}/shaders/*.vert.glsl"
+    "${PROJECT_SOURCE_DIR}/shaders/*.comp.glsl"
     )
 
 foreach(GLSL ${GLSL_SOURCE_FILES})
