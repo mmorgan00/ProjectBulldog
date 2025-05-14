@@ -8,8 +8,10 @@
 // forward declaration
 class VulkanEngine;
 
-std::optional<std::vector<std::shared_ptr<MeshAsset>>> loadGltfMeshes(
-    VulkanEngine* engine, std::filesystem::path filePath);
+//std::optional<std::vector<std::shared_ptr<MeshAsset>>> loadGltfMeshes(
+//    VulkanEngine* engine, std::filesystem::path filePath);
+
+
 
 struct LoadedGLTF : public IRenderable {
 
@@ -38,3 +40,5 @@ private:
 
     void clearAll();
 };
+
+std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(VulkanEngine* engine, std::string_view filePath);

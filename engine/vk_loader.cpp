@@ -52,6 +52,7 @@ VkSamplerMipmapMode extract_mipmap_mode(fastgltf::Filter filter)
         return VK_SAMPLER_MIPMAP_MODE_LINEAR;
     }
 };
+void LoadedGLTF::clearAll() {  };
 
 std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(VulkanEngine* engine, std::string_view filePath)
 {

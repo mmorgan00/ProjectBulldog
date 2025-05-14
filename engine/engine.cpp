@@ -43,8 +43,7 @@ void VulkanEngine::init() {
 	init_default_data();
 	
 	mainCamera.velocity = glm::vec3(0.f);
-	mainCamera.position = glm::vec3(0, 0, 5);
-	mainCamera.position = glm::vec3(0);
+	mainCamera.position = glm::vec3(30.f, -00.f, -085.f);
 	mainCamera.yaw = 0;
 
 	std::string structurePath = { "..\\..\\assets\\structure.glb" };
@@ -472,20 +471,20 @@ void VulkanEngine::init_default_data() {
 
 	defaultData = metalRoughMaterial.write_material(_device,MaterialPass::MainColor,materialResources, globalDescriptorAllocator);
 
-	testMeshes = loadGltfMeshes(this, "../../assets/basicmesh.glb").value();
-	for (auto& m : testMeshes) {
-		std::shared_ptr<MeshNode> newNode = std::make_shared<MeshNode>();
-		newNode->mesh = m;
+	//testMeshes = loadGltfMeshes(this, "../../assets/basicmesh.glb").value();
+	//for (auto& m : testMeshes) {
+	//	std::shared_ptr<MeshNode> newNode = std::make_shared<MeshNode>();
+	//	newNode->mesh = m;
 
-		newNode->localTransform = glm::mat4{ 1.f };
-		newNode->worldTransform = glm::mat4{ 1.f };
+	//	newNode->localTransform = glm::mat4{ 1.f };
+	//	newNode->worldTransform = glm::mat4{ 1.f };
 
-		for (auto& s : newNode->mesh->surfaces) {
-			s.material = std::make_shared<GLTFMaterial>(defaultData);
-		}
+	//	for (auto& s : newNode->mesh->surfaces) {
+	//		s.material = std::make_shared<GLTFMaterial>(defaultData);
+	//	}
 
-		loadedNodes[m->name] = std::move(newNode);
-	}
+	//	loadedNodes[m->name] = std::move(newNode);
+	//}
 
 	_mainDeletionQueue.push_function([&]() {
 		vkDestroySampler(_device, _defaultSamplerNearest, nullptr);
@@ -567,6 +566,7 @@ void VulkanEngine::cleanup() {
 	if (_isInitialized) {
 		// make sure the gpu has stopped doing its things
 		vkDeviceWaitIdle(_device);
+		loadedScenes.clear();
 
 		for (int i = 0; i < FRAME_OVERLAP; i++) {
 			vkDestroyCommandPool(_device, _frames[i]._commandPool, nullptr);
@@ -695,7 +695,7 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
 
 	GPUDrawPushConstants push_constants;
 	push_constants.worldMatrix = projection * view;
-	push_constants.vertexBuffer = testMeshes[2]->meshBuffers.vertexBufferAddress;
+	//push_constants.vertexBuffer = testMeshes[2]->meshBuffers.vertexBufferAddress;
 
 
 	for (const RenderObject& draw : mainDrawContext.OpaqueSurfaces) {
