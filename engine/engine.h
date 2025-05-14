@@ -11,6 +11,7 @@
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
 #include "vk_mem_alloc.h"
+#include <vk_loader.h>
 
 struct ComputePushConstants {
   glm::vec4 data1;
@@ -43,7 +44,7 @@ struct FrameData {
 constexpr unsigned int FRAME_OVERLAP = 2;
 //< framedata
 // Forward declare to include in struct
-struct VulkanEngine;
+class VulkanEngine;
 
 struct GLTFMetallic_Roughness {
 	MaterialPipeline opaquePipeline;
@@ -194,6 +195,8 @@ class VulkanEngine {
   MaterialInstance defaultData;
   GLTFMetallic_Roughness metalRoughMaterial;
 
+  std::unordered_map<std::string, std::shared_ptr<LoadedGLTF>> loadedScenes;
+
 
   void init_mesh_pipeline();
   //<mesh pipeline
@@ -212,6 +215,8 @@ class VulkanEngine {
 
   GPUMeshBuffers uploadMesh(std::span<uint32_t> indices,
                             std::span<Vertex> vertices);
+  AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage,
+	  VmaMemoryUsage memoryUsage);
 
   // run main loop
   void run();
@@ -232,8 +237,7 @@ class VulkanEngine {
   void init_imgui();
   void draw_geometry(VkCommandBuffer cmd);
   void draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView);
-  AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage,
-                                VmaMemoryUsage memoryUsage);
+
   void destroy_buffer(const AllocatedBuffer& buffer);
   void init_default_data();
 };
