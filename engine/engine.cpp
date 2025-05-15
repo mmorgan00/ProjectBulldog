@@ -1,6 +1,7 @@
 ﻿
 #include "vk_descriptors.h"
 #include <SDL.h>
+#include <json.hpp>
 #include <SDL_vulkan.h>
 #include <engine.h>
 #include <engine_types.h>
@@ -9,6 +10,8 @@
 #include <vk_loader.h>
 #include <vk_pipelines.h>
 #include <vulkan/vulkan_core.h>
+
+#include <fstream>
 
 #include <array>
 #include <chrono>
@@ -19,19 +22,29 @@
 #include "VkBootstrap.h"
 #include "vk_mem_alloc.h"
 
+using json = nlohmann::json;
+
 //> init_fn
 constexpr bool bUseValidationLayers = false;
 
+// TODO: Configuraiton driven, possibly in a constructor, rather than in an init() call
 void VulkanEngine::init() {
 	// We initialize SDL and create a window with it.
+
+	std::ifstream configFile("..\\..\\config\\init.json");
+	json config = json::parse(configFile);
+
+
 	SDL_Init(SDL_INIT_VIDEO);
+  SDL_SetRelativeMouseMode(SDL_TRUE);
 
 	SDL_WindowFlags window_flags =
 		(SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
 
-	_window = SDL_CreateWindow("Vulkan Engine", SDL_WINDOWPOS_UNDEFINED,
+	_window = SDL_CreateWindow(config["appName"].get<std::string>().c_str(), SDL_WINDOWPOS_UNDEFINED,
 		SDL_WINDOWPOS_UNDEFINED, _windowExtent.width,
 		_windowExtent.height, window_flags);
+
 
 	init_vulkan();
 	init_swapchain();
@@ -46,7 +59,7 @@ void VulkanEngine::init() {
 	mainCamera.position = glm::vec3(30.f, -00.f, -085.f);
 	mainCamera.yaw = 0;
 
-	std::string structurePath = { "..\\..\\assets\\structure_mat.glb" };
+	std::string structurePath = { "..\\..\\assets\\" + config["sceneName"].get<std::string>() + ".glb"};
 	auto structureFile = loadGltf(this, structurePath);
 
 	assert(structureFile.has_value());

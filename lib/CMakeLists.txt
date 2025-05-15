@@ -1,6 +1,7 @@
 find_package(Vulkan REQUIRED)
 
 add_library(vkbootstrap STATIC)
+add_library(nlohmann INTERFACE)
 add_library(glm INTERFACE)
 add_library(vma INTERFACE)
 
@@ -10,12 +11,15 @@ add_subdirectory(fastgltf)
 add_subdirectory(fmt EXCLUDE_FROM_ALL)
 add_subdirectory(SDL EXCLUDE_FROM_ALL)
 
+
 target_sources(vkbootstrap PRIVATE 
   vkbootstrap/VkBootstrap.h
   vkbootstrap/VkBootstrap.cpp
   )
 
+
 target_include_directories(vkbootstrap PUBLIC vkbootstrap)
+target_include_directories(nlohmann INTERFACE nlohmann)
 target_link_libraries(vkbootstrap PUBLIC Vulkan::Vulkan $<$<BOOL:UNIX>:${CMAKE_DL_LIBS}>)
 set_property(TARGET vkbootstrap PROPERTY CXX_STANDARD 20)
 
@@ -32,6 +36,8 @@ target_include_directories(glm INTERFACE glm)
 #target_link_libraries(sdl2 INTERFACE SDL2 SDL2main)
 
 add_library(imgui STATIC)
+
+
 
 target_include_directories(imgui PUBLIC imgui)
 
