@@ -46,7 +46,7 @@ void VulkanEngine::init() {
 	mainCamera.position = glm::vec3(30.f, -00.f, -085.f);
 	mainCamera.yaw = 0;
 
-	std::string structurePath = { "..\\..\\assets\\structure.glb" };
+	std::string structurePath = { "..\\..\\assets\\structure_mat.glb" };
 	auto structureFile = loadGltf(this, structurePath);
 
 	assert(structureFile.has_value());
