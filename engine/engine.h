@@ -89,6 +89,7 @@ struct RenderObject {
 
 struct DrawContext {
 	std::vector<RenderObject> OpaqueSurfaces;
+	std::vector<RenderObject> TransparentSurfaces;
 };
 
 struct MeshNode : public Node {
