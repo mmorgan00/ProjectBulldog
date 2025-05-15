@@ -217,6 +217,8 @@ class VulkanEngine {
                             std::span<Vertex> vertices);
   AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage,
 	  VmaMemoryUsage memoryUsage);
+  void destroy_buffer(const AllocatedBuffer& buffer);
+
 
   // run main loop
   void run();
@@ -238,6 +240,6 @@ class VulkanEngine {
   void draw_geometry(VkCommandBuffer cmd);
   void draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView);
 
-  void destroy_buffer(const AllocatedBuffer& buffer);
+
   void init_default_data();
 };

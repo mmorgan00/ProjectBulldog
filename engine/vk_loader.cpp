@@ -10,6 +10,7 @@
 #include <iostream>
 
 #include "stb_image.h"
+#include <vk_images.h>
 
 
 
@@ -52,7 +53,34 @@ VkSamplerMipmapMode extract_mipmap_mode(fastgltf::Filter filter)
         return VK_SAMPLER_MIPMAP_MODE_LINEAR;
     }
 };
-void LoadedGLTF::clearAll() {  };
+void LoadedGLTF::clearAll() {  
+
+    VkDevice dv = creator->_device;
+
+    descriptorPool.destroy_pools(dv);
+    creator->destroy_buffer(materialDataBuffer);
+
+    for (auto& [k, v] : meshes) {
+
+        creator->destroy_buffer(v->meshBuffers.indexBuffer);
+        creator->destroy_buffer(v->meshBuffers.vertexBuffer);
+    }
+
+    for (auto& [k, v] : images) {
+
+        if (v.image == creator->_errorCheckerboardImage.image) {
+            //dont destroy the default images
+            continue;
+        }
+        creator->destroy_image(v);
+    }
+
+    for (auto& sampler : samplers) {
+        vkDestroySampler(dv, sampler, nullptr);
+    }
+};
+
+
 
 std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(VulkanEngine* engine, std::string_view filePath)
 {
@@ -134,7 +162,18 @@ std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(VulkanEngine* engine, std::s
     // load all textures
     for (fastgltf::Image& image : gltf.images) {
 
-        images.push_back(engine->_errorCheckerboardImage);
+        std::optional<AllocatedImage> img = vkutil::load_image(engine, gltf, image);
+
+        if (img.has_value()) {
+            images.push_back(*img);
+            file.images[image.name.c_str()] = *img;
+        }
+        else {
+            // we failed to load, so lets give the slot a default white texture to not
+            // completely break loading
+            images.push_back(engine->_errorCheckerboardImage);
+            std::cout << "gltf failed to load texture " << image.name << std::endl;
+        }
     }
 
 

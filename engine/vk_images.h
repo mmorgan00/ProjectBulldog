@@ -2,6 +2,10 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+#include <fastgltf/glm_element_traits.hpp>
+#include <fastgltf/parser.hpp>
+#include <fastgltf/tools.hpp>
+#include <engine.h>
 
 namespace vkutil {
 
@@ -12,4 +16,6 @@ void copy_image_to_image(VkCommandBuffer cmd, VkImage source,
                          VkExtent2D dstSize);
 
 void generate_mipmaps(VkCommandBuffer cmd, VkImage image, VkExtent2D imageSize);
+std::optional<AllocatedImage> load_image(VulkanEngine* engine, fastgltf::Asset& asset, fastgltf::Image& image);
+
 }  // namespace vkutil
