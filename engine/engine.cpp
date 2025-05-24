@@ -983,7 +983,7 @@ void VulkanEngine::init_vulkan() {
 	vkb::InstanceBuilder builder;
 
 	// make the vulkan instance, with basic debug features
-	auto inst_ret = builder.set_app_name("Example Vulkan Application")
+	auto inst_ret = builder.set_app_name("Project Bulldog")
 		.request_validation_layers(bUseValidationLayers)
 		.use_default_debug_messenger()
 		.require_api_version(1, 3, 0)
