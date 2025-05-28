@@ -45,7 +45,7 @@ void VulkanEngine::init() {
 		SDL_WINDOWPOS_UNDEFINED, _windowExtent.width,
 		_windowExtent.height, window_flags);
 
-
+	// initialize rendering resources
 	init_vulkan();
 	init_swapchain();
 	init_commands();
@@ -55,10 +55,13 @@ void VulkanEngine::init() {
 	init_imgui();
 	init_default_data();
 	
+	// TODO: Load from config/ini file
 	mainCamera.velocity = glm::vec3(0.f);
-	mainCamera.position = glm::vec3(30.f, -00.f, -085.f);
+	//mainCamera.position = glm::vec3(30.f, -00.f, -085.f); // Use for structure
+	mainCamera.position = glm::vec3(-5.0f, 10.0f, 5.0f); // Use for gym. 
 	mainCamera.yaw = 0;
 
+	// TODO: Rename from 'structure path' to something better conveying the 'initial level' idea
 	std::string structurePath = { "..\\..\\assets\\" + config["sceneName"].get<std::string>() + ".glb"};
 	auto structureFile = loadGltf(this, structurePath);
 
@@ -71,6 +74,13 @@ void VulkanEngine::init() {
 }
 //< init_fn
 
+/// <summary>
+/// Allocates a gpu buffer
+/// </summary>
+/// <param name="allocSize">Size of the buffer to allocate</param>
+/// <param name="usage">Unused parameter</param>
+/// <param name="memoryUsage">Vulkan allocation usage flags</param>
+/// <returns></returns>
 AllocatedBuffer VulkanEngine::create_buffer(size_t allocSize,
 	VkBufferUsageFlags usage,
 	VmaMemoryUsage memoryUsage) {
@@ -93,6 +103,14 @@ AllocatedBuffer VulkanEngine::create_buffer(size_t allocSize,
 	return newBuffer;
 }
 
+/**
+ * @brief Allocates an image
+ * @param size Image size
+ * @param format Image format
+ * @param usage Memory usage flags
+ * @param mipmapped should craeted image be generated with mipmaps
+ * @return 
+ */
 AllocatedImage VulkanEngine::create_image(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped)
 {
 	AllocatedImage newImage;
@@ -168,6 +186,10 @@ AllocatedImage VulkanEngine::create_image(void* data, VkExtent3D size, VkFormat 
 	return new_image;
 }
 
+/**
+ * @brief Destroys provided image and associated image view
+ * @param img AllocatedImage to be destroyed
+ */
 void VulkanEngine::destroy_image(const AllocatedImage& img)
 {
 	vkDestroyImageView(_device, img.imageView, nullptr);
@@ -237,11 +259,19 @@ GPUMeshBuffers VulkanEngine::uploadMesh(std::span<uint32_t> indices,
 	return newSurface;
 }
 
+/**
+ * @brief Destroys an allocated buffer
+ * @param buffer AllocatedBuffer to be destoryed
+ */
 void VulkanEngine::destroy_buffer(const AllocatedBuffer& buffer) {
 	vmaDestroyBuffer(_allocator, buffer.buffer, buffer.allocation);
 }
 
 //> destroy_sc
+
+/**
+ * @brief Destroys the swapchain. Used in swapchain recreation
+ */
 void VulkanEngine::destroy_swapchain() {
 	vkDestroySwapchainKHR(_device, _swapchain, nullptr);
 
@@ -252,6 +282,11 @@ void VulkanEngine::destroy_swapchain() {
 }
 //< destroy_sc
 
+/**
+ * @brief Initializes any graphics pipelines needed for rendering.
+ * Due to very tiny amount of pipelines currently used, creating all of the pipelines up front is fine
+ * As the project grows, prioritizing some pipelines and saving others for creating later may be justified
+ */
 void VulkanEngine::init_pipelines() {
 	// COMPUTE PIPELINES
 	init_background_pipelines();
@@ -262,6 +297,10 @@ void VulkanEngine::init_pipelines() {
 	metalRoughMaterial.build_pipelines(this);
 }
 
+/**
+ * @brief Creates all background pipelines
+ * @detail Background pipelines right now are all compute shader based images rather than a cube map for now.
+ */
 void VulkanEngine::init_background_pipelines() {
 	VkPipelineLayoutCreateInfo computeLayout{};
 	computeLayout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -350,6 +389,10 @@ void VulkanEngine::init_background_pipelines() {
 		});
 }
 
+/**
+ * @brief Creates the mesh rendering pipeline. 
+ * @detail Right now all meshes use the same pipeline for rendering. As more objects with different 'materials' are added, this will grow
+ */
 void VulkanEngine::init_mesh_pipeline() {
 	VkShaderModule triangleFragShader;
 	if (!vkutil::load_shader_module("../../shaders/tex_image.frag.spv",
@@ -421,6 +464,9 @@ void VulkanEngine::init_mesh_pipeline() {
 }
 
 
+/**
+ * @brief Loads default textures
+ */
 void VulkanEngine::init_default_data() {
 
 	//3 default textures, white, grey, black. 1 pixel each
@@ -484,21 +530,6 @@ void VulkanEngine::init_default_data() {
 
 	defaultData = metalRoughMaterial.write_material(_device,MaterialPass::MainColor,materialResources, globalDescriptorAllocator);
 
-	//testMeshes = loadGltfMeshes(this, "../../assets/basicmesh.glb").value();
-	//for (auto& m : testMeshes) {
-	//	std::shared_ptr<MeshNode> newNode = std::make_shared<MeshNode>();
-	//	newNode->mesh = m;
-
-	//	newNode->localTransform = glm::mat4{ 1.f };
-	//	newNode->worldTransform = glm::mat4{ 1.f };
-
-	//	for (auto& s : newNode->mesh->surfaces) {
-	//		s.material = std::make_shared<GLTFMaterial>(defaultData);
-	//	}
-
-	//	loadedNodes[m->name] = std::move(newNode);
-	//}
-
 	_mainDeletionQueue.push_function([&]() {
 		vkDestroySampler(_device, _defaultSamplerNearest, nullptr);
 		vkDestroySampler(_device, _defaultSamplerLinear, nullptr);
@@ -510,6 +541,9 @@ void VulkanEngine::init_default_data() {
 		});
 }
 
+/**
+ * @brief Initializes descriptor sets needed for camera transformation and texture referencing
+ */
 void VulkanEngine::init_descriptors() {
 	// create a descriptor pool that will hold 10 sets with 1 image each
 	std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {
@@ -575,6 +609,9 @@ void VulkanEngine::init_descriptors() {
 		});
 }
 
+/**
+ * @brief Cleans up all rendering resources
+ */
 void VulkanEngine::cleanup() {
 	if (_isInitialized) {
 		// make sure the gpu has stopped doing its things
@@ -611,6 +648,10 @@ void VulkanEngine::cleanup() {
 	}
 }
 
+/**
+ * @brief Called every frame.
+ * Handles camera inputs and updates the transformations and then initiates scene graph traversal of updates
+ */
 void VulkanEngine::update_scene()
 {
 
@@ -629,17 +670,7 @@ void VulkanEngine::update_scene()
 	sceneData.proj = projection;
 	sceneData.viewproj = projection * view;
 
-	//mainDrawContext.OpaqueSurfaces.clear();
-
-	//loadedNodes["Suzanne"]->Draw(glm::mat4{1.f}, mainDrawContext);	
-
-	//for (int x = -3; x < 3; x++) {
-
-	//	glm::mat4 scale = glm::scale(glm::vec3{0.2});
-	//	glm::mat4 translation =  glm::translate(glm::vec3{x, 1, 0});
-
-	//	loadedNodes["Cube"]->Draw(translation * scale, mainDrawContext);
-	//}
+	// TODO: Configuration/data driven referencing rather than hardcode
 	loadedScenes["structure"]->Draw(glm::mat4{ 1.f }, mainDrawContext);
 
 	//some default lighting parameters
@@ -648,7 +679,12 @@ void VulkanEngine::update_scene()
 	sceneData.sunlightDirection = glm::vec4(0,1,0.5,1.f);
 }
 
-
+/**
+ * @brief Main driver function of draw calls
+ * @detail Iterates through the draw context for everything to be drawn in this frame.
+ * TODO: Room for improvement as each material/pipeline is bound per call. Pre-sorting and drawing per pipeline would be more efficient as we scale
+ * @param cmd Allocated command buffer for recording draw calls
+ */
 void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
 	// allocate a new uniform buffer for the scene data
 	AllocatedBuffer gpuSceneDataBuffer =
@@ -739,6 +775,10 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
 	vkCmdEndRendering(cmd);
 }
 
+/**
+ * @brief Issues draw calls for background image
+ * @param cmd Prepared Vulkan command buffer for recording draw calls
+ */
 void VulkanEngine::draw_background(VkCommandBuffer cmd) {
 	ComputeEffect& effect = backgroundEffects[currentBackgroundEffect];
 
@@ -760,6 +800,9 @@ void VulkanEngine::draw_background(VkCommandBuffer cmd) {
 	// their correct
 }
 
+/**
+ * @brief Driver function for a frame render
+ */
 void VulkanEngine::draw() {
 	update_scene();
 	// wait until the gpu has finished rendering the last frame. Timeout of 1
@@ -906,6 +949,10 @@ void VulkanEngine::draw() {
 	//< draw_6
 }
 
+/**
+ * @brief Driver function for a 'tick'
+ * @detail Handles input, issues IMGUI draw calls, and issues renderer driver calls
+ */
 void VulkanEngine::run() {
 	SDL_Event e;
 	bool bQuit = false;
@@ -978,6 +1025,9 @@ void VulkanEngine::run() {
 	}
 }
 
+/**
+ * @brief Initializes vulkan instance
+ */
 void VulkanEngine::init_vulkan() {
 	//> init_instance
 	vkb::InstanceBuilder builder;
@@ -1053,6 +1103,12 @@ void VulkanEngine::init_vulkan() {
 }
 
 //> init_swap
+
+/**
+ * @brief Creates a vulkan swapchain for the provided screen size. Used when recreating swapchain
+ * @param width Width in pixels
+ * @param height Height in pixels
+ */
 void VulkanEngine::create_swapchain(uint32_t width, uint32_t height) {
 	vkb::SwapchainBuilder swapchainBuilder{ _chosenGPU, _device, _surface };
 
@@ -1078,6 +1134,9 @@ void VulkanEngine::create_swapchain(uint32_t width, uint32_t height) {
 	_swapchainImageViews = vkbSwapchain.get_image_views().value();
 }
 
+/**
+ * @brief Creates initial swapchain
+ */
 void VulkanEngine::init_swapchain() {
 	create_swapchain(_windowExtent.width, _windowExtent.height);
 
@@ -1151,6 +1210,10 @@ void VulkanEngine::init_swapchain() {
 //< init_swap
 
 //> init_cmd
+
+/**
+ * @brief Initializes command buffers for recording draw calls
+ */
 void VulkanEngine::init_commands() {
 	// create a command pool for commands submitted to the graphics queue.
 	// we also want the pool to allow for resetting of individual command buffers
@@ -1183,6 +1246,9 @@ void VulkanEngine::init_commands() {
 }
 //< init_cmd
 
+/**
+ * @brief Initializes IMGUI for debug UI rendering
+ */
 void VulkanEngine::init_imgui() {
 	// 1: create descriptor pool for IMGUI
 	//  the size of the pool is very oversize, but it's copied from imgui demo
@@ -1250,6 +1316,11 @@ void VulkanEngine::init_imgui() {
 		});
 }
 
+/**
+ * @brief Driver function for imgui draw calls
+ * @param cmd Prepared command buffer
+ * @param targetImageView Image view to render into 
+ */
 void VulkanEngine::draw_imgui(VkCommandBuffer cmd,
 	VkImageView targetImageView) {
 	VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(
@@ -1263,6 +1334,11 @@ void VulkanEngine::draw_imgui(VkCommandBuffer cmd,
 
 	vkCmdEndRendering(cmd);
 }
+
+/**
+ * @brief Immediate draw submit, such as imgui rendering
+ * @param function The function to be used in immediate submit
+ */
 void VulkanEngine::immediate_submit(
 	std::function<void(VkCommandBuffer cmd)>&& function) {
 	VK_CHECK(vkResetFences(_device, 1, &_immFence));
@@ -1289,6 +1365,10 @@ void VulkanEngine::immediate_submit(
 	VK_CHECK(vkWaitForFences(_device, 1, &_immFence, true, 9999999999));
 }
 //> init_sync
+
+/**
+ * @brief Initializes vulkan sync structures (semaphore and fences)
+ */
 void VulkanEngine::init_sync_structures() {
 	// create syncronization structures
 	// one fence to control when the gpu has finished rendering the frame,
@@ -1315,6 +1395,10 @@ void VulkanEngine::init_sync_structures() {
 }
 //< init_sync
 
+/**
+ * @brief Helper function for recreating swapchain.
+ * @detail You can't resize a swapchain. You can destroy and recreate one though
+ */
 void VulkanEngine::resize_swapchain() {
 	vkDeviceWaitIdle(_device);
 
@@ -1330,7 +1414,11 @@ void VulkanEngine::resize_swapchain() {
 	resize_requested = false;
 }
 
-
+// TODO: Data driven not hardcoded compilation
+/**
+ * @brief Builds render pipelines from shaders
+ * @param engine pointer to render engine for vulkan resources
+ */
 void GLTFMetallic_Roughness::build_pipelines(VulkanEngine* engine)
 {
 	VkShaderModule meshFragShader;
@@ -1402,7 +1490,14 @@ void GLTFMetallic_Roughness::build_pipelines(VulkanEngine* engine)
 	vkDestroyShaderModule(engine->_device, meshVertexShader, nullptr);
 }
 
-
+/**
+ * @brief Binds a provided material information to the appropriate GPU resources for use
+ * @param device 
+ * @param pass 
+ * @param resources 
+ * @param descriptorAllocator 
+ * @return 
+ */
 MaterialInstance GLTFMetallic_Roughness::write_material(VkDevice device, MaterialPass pass, const MaterialResources& resources, DescriptorAllocatorGrowable& descriptorAllocator)
 {
 	MaterialInstance matData;
@@ -1427,7 +1522,12 @@ MaterialInstance GLTFMetallic_Roughness::write_material(VkDevice device, Materia
 	return matData;
 }
 
-
+/**
+ * @brief Helper draw function
+ * @detail Does not issue draw calls itself, but prepares draw resources then queues self for rendering later. Recurses to child nodes
+ * @param topMatrix 
+ * @param ctx 
+ */
 void MeshNode::Draw(const glm::mat4& topMatrix, DrawContext& ctx)
 {
 	glm::mat4 nodeMatrix = topMatrix * worldTransform;
