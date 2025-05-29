@@ -1,3 +1,4 @@
+#include "SDL3/SDL_events.h"
 #include <camera.h>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -10,21 +11,21 @@ void Camera::update() {
 // TODO: This is a very simple approach, and leaves a lot of room just on handling multiple inputs. 
 void Camera::processSDLEvent(SDL_Event& e)
 {
-    if (e.type == SDL_KEYDOWN) {
-        if (e.key.keysym.sym == SDLK_w) { velocity.z = -1; }
-        if (e.key.keysym.sym == SDLK_s) { velocity.z = 1; }
-        if (e.key.keysym.sym == SDLK_a) { velocity.x = -1; }
-        if (e.key.keysym.sym == SDLK_d) { velocity.x = 1; }
+    if (e.type == SDL_EVENT_KEY_DOWN) {
+        if (e.key.key == SDLK_W) { velocity.z = -1; }
+        if (e.key.key == SDLK_S) { velocity.z = 1; }
+        if (e.key.key == SDLK_A) { velocity.x = -1; }
+        if (e.key.key == SDLK_D) { velocity.x = 1; }
     }
 
-    if (e.type == SDL_KEYUP) {
-        if (e.key.keysym.sym == SDLK_w) { velocity.z = 0; }
-        if (e.key.keysym.sym == SDLK_s) { velocity.z = 0; }
-        if (e.key.keysym.sym == SDLK_a) { velocity.x = 0; }
-        if (e.key.keysym.sym == SDLK_d) { velocity.x = 0; }
+    if (e.type == SDL_EVENT_KEY_UP) {
+        if (e.key.key == SDLK_W) { velocity.z = 0; }
+        if (e.key.key == SDLK_S) { velocity.z = 0; }
+        if (e.key.key == SDLK_A) { velocity.x = 0; }
+        if (e.key.key == SDLK_D) { velocity.x = 0; }
     }
 
-    if (e.type == SDL_MOUSEMOTION) {
+    if (e.type == SDL_EVENT_MOUSE_MOTION) {
         yaw += (float)e.motion.xrel / 200.f;
         pitch -= (float)e.motion.yrel / 200.f;
     }

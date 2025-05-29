@@ -24,7 +24,7 @@ set_property(TARGET engine PROPERTY CXX_STANDARD 20)
 target_compile_definitions(engine PUBLIC GLM_FORCE_DEPTH_ZERO_TO_ONE)
 target_include_directories(engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
-target_link_libraries(engine PUBLIC nlohmann vma glm Vulkan::Vulkan fmt::fmt stb_image SDL2::SDL2 vkbootstrap imgui fastgltf::fastgltf)
+target_link_libraries(engine PUBLIC nlohmann vma glm Vulkan::Vulkan fmt::fmt stb_image SDL3::SDL3 vkbootstrap imgui fastgltf::fastgltf)
 
 target_precompile_headers(engine PUBLIC <optional> <vector> <memory> <string> <vector> <unordered_map> <glm/mat4x4.hpp>  <glm/vec4.hpp> <vulkan/vulkan.h>)
 
@@ -51,8 +51,8 @@ add_executable(debug
     vk_images.h
     vk_loader.cpp
     vk_loader.h
-
- "camera.h" "camera.cpp")
+    camera.h
+    camera.cpp)
 
 set_target_properties(debug PROPERTIES 
     CXX_STANDARD 20
@@ -69,7 +69,7 @@ target_link_libraries(debug PUBLIC
     Vulkan::Vulkan 
     fmt::fmt 
     stb_image 
-    SDL2::SDL2 
+    SDL3::SDL3 
     vkbootstrap 
     imgui 
     nlohmann

@@ -1,5 +1,5 @@
 #include <engine_types.h>
-#include <SDL_events.h>
+#include <SDL3/SDL_events.h>
 
 class Camera {
 public:

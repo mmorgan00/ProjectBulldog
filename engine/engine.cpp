@@ -1,8 +1,8 @@
 ﻿
 #include "vk_descriptors.h"
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include <json.hpp>
-#include <SDL_vulkan.h>
+#include <SDL3/SDL_vulkan.h>
 #include <engine.h>
 #include <engine_types.h>
 #include <vk_images.h>
@@ -31,18 +31,22 @@ constexpr bool bUseValidationLayers = false;
 void VulkanEngine::init() {
 	// We initialize SDL and create a window with it.
 
-	std::ifstream configFile("..\\..\\config\\init.json");
+	std::ifstream configFile("../../config/init.json");
+  if (!configFile.is_open()) {
+    fmt::println("Could not open config init file. Quitting...");
+    exit(1); // Exit with error code
+  }
+
 	json config = json::parse(configFile);
 
 
 	SDL_Init(SDL_INIT_VIDEO);
-  SDL_SetRelativeMouseMode(SDL_TRUE);
+  SDL_SetWindowRelativeMouseMode(_window, true);
 
 	SDL_WindowFlags window_flags =
 		(SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
 
-	_window = SDL_CreateWindow(config["appName"].get<std::string>().c_str(), SDL_WINDOWPOS_UNDEFINED,
-		SDL_WINDOWPOS_UNDEFINED, _windowExtent.width,
+	_window = SDL_CreateWindow(config["appName"].get<std::string>().c_str(),  _windowExtent.width,
 		_windowExtent.height, window_flags);
 
 	// initialize rendering resources
@@ -962,29 +966,27 @@ void VulkanEngine::run() {
 		// Handle events on queue
 		while (SDL_PollEvent(&e) != 0) {
 			// close the window when user alt-f4s or clicks the X button
-			if (e.type == SDL_QUIT) bQuit = true;
+			if (e.type == SDL_EVENT_QUIT) bQuit = true;
 
 			mainCamera.processSDLEvent(e);
 
 			// Handle keypress
-			if (e.type == SDL_KEYDOWN) {
+			if (e.type == SDL_EVENT_KEY_DOWN) {
 				// Another way to quit
-				if (e.key.keysym.sym == SDLK_ESCAPE) {
+				if (e.key.key == SDLK_ESCAPE) {
 					fmt::println("Quitting...");
 					bQuit = true;
 				}
 			}
 
-			if (e.type == SDL_WINDOWEVENT) {
-				if (e.window.event == SDL_WINDOWEVENT_MINIMIZED) {
+				if (e.type == SDL_EVENT_WINDOW_MINIMIZED) {
 					stop_rendering = true;
 				}
-				if (e.window.event == SDL_WINDOWEVENT_RESTORED) {
+				if (e.type == SDL_EVENT_WINDOW_RESTORED) {
 					stop_rendering = false;
 				}
-			}
 			// send SDL event to imgui for handling
-			ImGui_ImplSDL2_ProcessEvent(&e);
+			ImGui_ImplSDL3_ProcessEvent(&e);
 		}
 
 		// do not draw if we are minimized
@@ -998,7 +1000,7 @@ void VulkanEngine::run() {
 		}
 		// imgui new frame
 		ImGui_ImplVulkan_NewFrame();
-		ImGui_ImplSDL2_NewFrame();
+		ImGui_ImplSDL3_NewFrame();
 		ImGui::NewFrame();
 
 		if (ImGui::Begin("background")) {
@@ -1048,7 +1050,7 @@ void VulkanEngine::init_vulkan() {
 	//< init_instance
 	//
 	//> init_device
-	SDL_Vulkan_CreateSurface(_window, _instance, &_surface);
+	SDL_Vulkan_CreateSurface(_window, _instance, nullptr, &_surface);
 
 	// vulkan 1.3 features
 	VkPhysicalDeviceVulkan13Features features{
@@ -1282,7 +1284,7 @@ void VulkanEngine::init_imgui() {
 	ImGui::CreateContext();
 
 	// this initializes imgui for SDL
-	ImGui_ImplSDL2_InitForVulkan(_window);
+	ImGui_ImplSDL3_InitForVulkan(_window);
 
 	// this initializes imgui for Vulkan
 	ImGui_ImplVulkan_InitInfo init_info = {};

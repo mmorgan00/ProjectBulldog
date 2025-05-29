@@ -188,8 +188,9 @@ if (data) {
 }
 },
 [&](fastgltf::sources::Vector& vector) {
-    unsigned char* data = stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()),
-        &width, &height, &nrChannels, 4);
+const unsigned char* buffer = reinterpret_cast<const unsigned char*>(vector.bytes.data());
+unsigned char* data = stbi_load_from_memory(buffer, static_cast<int>(vector.bytes.size()), &width, &height, &nrChannels, 4);
+
     if (data) {
         VkExtent3D imagesize;
         imagesize.width = width;
@@ -210,9 +211,9 @@ if (data) {
         // are already loaded into a vector.
 [](auto& arg) {},
 [&](fastgltf::sources::Vector& vector) {
-    unsigned char* data = stbi_load_from_memory(vector.bytes.data() + bufferView.byteOffset,
-        static_cast<int>(bufferView.byteLength),
-        &width, &height, &nrChannels, 4);
+const unsigned char* buffer = reinterpret_cast<const unsigned char*>(vector.bytes.data());
+unsigned char* data = stbi_load_from_memory(buffer, static_cast<int>(vector.bytes.size()), &width, &height, &nrChannels, 4);
+
     if (data) {
         VkExtent3D imagesize;
         imagesize.width = width;
