@@ -4,7 +4,6 @@ project ("ProjectBulldog")
 
 
 find_package(Vulkan REQUIRED)
-find_package(SDL3 REQUIRED)
 
 add_subdirectory(lib)
 

@@ -4,7 +4,6 @@ add_library(vkbootstrap STATIC)
 add_library(nlohmann INTERFACE)
 add_library(glm INTERFACE)
 add_library(vma INTERFACE)
-
 add_library(stb_image INTERFACE)
 
 add_subdirectory(fastgltf)
@@ -14,26 +13,21 @@ add_subdirectory(SDL EXCLUDE_FROM_ALL)
 target_sources(vkbootstrap PRIVATE 
   vkbootstrap/VkBootstrap.h
   vkbootstrap/VkBootstrap.cpp
-  )
-
+)
 
 target_include_directories(vkbootstrap PUBLIC vkbootstrap)
 target_include_directories(nlohmann INTERFACE nlohmann)
 target_link_libraries(vkbootstrap PUBLIC Vulkan::Vulkan $<$<BOOL:UNIX>:${CMAKE_DL_LIBS}>)
 set_property(TARGET vkbootstrap PROPERTY CXX_STANDARD 20)
 
-#both vma and glm and header only libs so we only need the include path
 target_include_directories(vma INTERFACE vma)
 target_include_directories(glm INTERFACE glm)
 
+# Use the SDL3 target from add_subdirectory(SDL)
 add_library(sdl3 INTERFACE)
-target_include_directories(sdl3 INTERFACE ${SDL3_INCLUDE_DIRS})
-target_link_libraries(sdl3 INTERFACE ${SDL3_LIBRARIES})
+target_link_libraries(sdl3 INTERFACE SDL3::SDL3)  # Adjust if the target name is different
 
 add_library(imgui STATIC)
-
-
-
 target_include_directories(imgui PUBLIC imgui)
 
 target_sources(imgui PRIVATE 
@@ -45,7 +39,7 @@ target_sources(imgui PRIVATE
   imgui/imgui_tables.cpp
   imgui/backends/imgui_impl_vulkan.cpp
   imgui/backends/imgui_impl_sdl3.cpp
-  )
+)
 
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan sdl3)
 
