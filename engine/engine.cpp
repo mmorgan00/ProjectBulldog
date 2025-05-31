@@ -66,7 +66,7 @@ void VulkanEngine::init() {
 	mainCamera.yaw = 0;
 
 	// TODO: Rename from 'structure path' to something better conveying the 'initial level' idea
-	std::string structurePath = { "..\\..\\assets\\" + config["sceneName"].get<std::string>() + ".glb"};
+	std::string structurePath = { "../../assets/" + config["sceneName"].get<std::string>() + ".glb"};
 	auto structureFile = loadGltf(this, structurePath);
 
 	assert(structureFile.has_value());
@@ -156,6 +156,7 @@ AllocatedImage VulkanEngine::create_image(VkExtent3D size, VkFormat format, VkIm
 */
 AllocatedImage VulkanEngine::create_image(void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped)
 {
+  fmt::println("Create image being called");
 	size_t data_size = size.depth * size.width * size.height * 4;
 	AllocatedBuffer uploadbuffer = create_buffer(data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 

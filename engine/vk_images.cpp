@@ -1,12 +1,12 @@
 #include <vk_images.h>
 #include <vk_initializers.h>
+#include <vulkan/vulkan_core.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 //> transition
 #include <vk_initializers.h>
-
 
 void vkutil::transition_image(VkCommandBuffer cmd, VkImage image,
                               VkImageLayout currentLayout,
@@ -77,7 +77,7 @@ void vkutil::copy_image_to_image(VkCommandBuffer cmd, VkImage source,
   blitInfo.pRegions = &blitRegion;
 
   vkCmdBlitImage2(cmd, &blitInfo);
-}  //< copyimg
+} //< copyimg
 //> mipgen
 void vkutil::generate_mipmaps(VkCommandBuffer cmd, VkImage image,
                               VkExtent2D imageSize) {
@@ -159,86 +159,120 @@ void vkutil::generate_mipmaps(VkCommandBuffer cmd, VkImage image,
 //< mipgen
 
 //> loading
-std::optional<AllocatedImage> vkutil::load_image(VulkanEngine* engine, fastgltf::Asset& asset, fastgltf::Image& image)
-{
-    AllocatedImage newImage{};
+std::optional<AllocatedImage> vkutil::load_image(VulkanEngine *engine,
+                                                 fastgltf::Asset &asset,
+                                                 fastgltf::Image &image) {
+  AllocatedImage newImage{};
 
-    int width, height, nrChannels;
+  int width, height, nrChannels;
 
-    std::visit(
-        fastgltf::visitor{
-            [](auto& arg) {},
-            [&](fastgltf::sources::URI& filePath) {
-                assert(filePath.fileByteOffset == 0); // We don't support offsets with stbi.
-                assert(filePath.uri.isLocalPath()); // We're only capable of loading
-                // local files.
+  fmt::println("Load image called for {}", image.name);
+  // fmt::println("Searching path to load image ");
+  std::visit(
+      fastgltf::visitor{
+          [](auto &arg) {
+            fmt::println("Received image spec type that couldn't be handled");
+          },
+          [&](fastgltf::sources::URI &filePath) {
+            assert(filePath.fileByteOffset ==
+                   0); // We don't support offsets with stbi.
+            assert(filePath.uri.isLocalPath()); // We're only capable of loading
+                                                // local files.
 
-const std::string path(filePath.uri.path().begin(),
-    filePath.uri.path().end()); // Thanks C++.
-unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
-if (data) {
-    VkExtent3D imagesize;
-    imagesize.width = width;
-    imagesize.height = height;
-    imagesize.depth = 1;
+            const std::string path(filePath.uri.path().begin(),
+                                   filePath.uri.path().end()); // Thanks C++.
+            unsigned char *data =
+                stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
+            if (data) {
+              VkExtent3D imagesize;
+              imagesize.width = width;
+              imagesize.height = height;
+              imagesize.depth = 1;
 
-    newImage = engine->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT,false);
+              newImage = engine->create_image(
+                  data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
+                  VK_IMAGE_USAGE_SAMPLED_BIT, false);
 
-    stbi_image_free(data);
-}
-},
-[&](fastgltf::sources::Vector& vector) {
-const unsigned char* buffer = reinterpret_cast<const unsigned char*>(vector.bytes.data());
-unsigned char* data = stbi_load_from_memory(buffer, static_cast<int>(vector.bytes.size()), &width, &height, &nrChannels, 4);
+              stbi_image_free(data);
+            } else {
+              newImage = engine->_greyImage;
+            }
+          },
+          [&](fastgltf::sources::Vector &vector) {
+            const unsigned char *buffer =
+                reinterpret_cast<const unsigned char *>(vector.bytes.data());
+            unsigned char *data = stbi_load_from_memory(
+                buffer, static_cast<int>(vector.bytes.size()), &width, &height,
+                &nrChannels, 4);
 
-    if (data) {
-        VkExtent3D imagesize;
-        imagesize.width = width;
-        imagesize.height = height;
-        imagesize.depth = 1;
+            if (data) {
+              VkExtent3D imagesize;
+              imagesize.width = width;
+              imagesize.height = height;
+              imagesize.depth = 1;
 
-        newImage = engine->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT,false);
+              newImage = engine->create_image(
+                  data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
+                  VK_IMAGE_USAGE_SAMPLED_BIT, false);
 
-        stbi_image_free(data);
-    }
-},
-[&](fastgltf::sources::BufferView& view) {
-    auto& bufferView = asset.bufferViews[view.bufferViewIndex];
-    auto& buffer = asset.buffers[bufferView.bufferIndex];
+              stbi_image_free(data);
+            } else {
+              newImage = engine->_greyImage;
+            }
+          },
+          [&](fastgltf::sources::BufferView &view) {
+            auto &bufferView = asset.bufferViews[view.bufferViewIndex];
+            auto &buffer = asset.buffers[bufferView.bufferIndex];
 
-    std::visit(fastgltf::visitor { // We only care about VectorWithMime here, because we
-        // specify LoadExternalBuffers, meaning all buffers
-        // are already loaded into a vector.
-[](auto& arg) {},
-[&](fastgltf::sources::Vector& vector) {
-const unsigned char* buffer = reinterpret_cast<const unsigned char*>(vector.bytes.data());
-unsigned char* data = stbi_load_from_memory(buffer, static_cast<int>(vector.bytes.size()), &width, &height, &nrChannels, 4);
+            std::visit(fastgltf::visitor{
+                           // We only care about VectorWithMime here, because we
+                           // specify LoadExternalBuffers, meaning all buffers
+                           // are already loaded into a vector.
+                           [](auto &arg) {},
+                           [&](fastgltf::sources::Vector &vector) {
+                             const unsigned char *buffer =
+                                 reinterpret_cast<const unsigned char *>(
+                                     vector.bytes.data());
+                             unsigned char *data = stbi_load_from_memory(
+                                 buffer, static_cast<int>(vector.bytes.size()),
+                                 &width, &height, &nrChannels, 4);
 
-    if (data) {
-        VkExtent3D imagesize;
-        imagesize.width = width;
-        imagesize.height = height;
-        imagesize.depth = 1;
+                             if (data) {
+                               VkExtent3D imagesize;
+                               imagesize.width = width;
+                               imagesize.height = height;
+                               imagesize.depth = 1;
 
-        newImage = engine->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
-            VK_IMAGE_USAGE_SAMPLED_BIT,false);
+                               newImage = engine->create_image(
+                                   data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
+                                   VK_IMAGE_USAGE_SAMPLED_BIT, false);
 
-        stbi_image_free(data);
-    }
-} },
-buffer.data);
-},
-        },
-        image.data);
+                               stbi_image_free(data);
+                             } else {
+                               fmt::println("Failed to load texture data, "
+                                            "defaulting to error image");
+                               VkExtent3D imagesize;
+                               imagesize.width = 16;
+                               imagesize.height = 16;
+                               imagesize.depth = 1;
+                               newImage = engine->create_image(
+                                   engine->_greyImage.image,
+                                   imagesize, VK_FORMAT_R8G8B8A8_UNORM,
+                                   VK_IMAGE_USAGE_SAMPLED_BIT, false);
+                             }
+                           }},
+                       buffer.data);
+          },
+      },
+      image.data);
 
-    // if any of the attempts to load the data failed, we havent written the image
-    // so handle is null
-    if (newImage.image == VK_NULL_HANDLE) {
-        return {};
-    }
-    else {
-        return newImage;
-    }
+  // if any of the attempts to load the data failed, we havent written the image
+  // so handle is null
+  if (newImage.image == VK_NULL_HANDLE) {
+    return {};
+  } else {
+    return newImage;
+  }
 }
 
 //> loading
