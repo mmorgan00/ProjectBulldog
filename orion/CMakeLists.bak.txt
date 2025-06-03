@@ -6,6 +6,7 @@ add_executable (engine
     engine.cpp
     engine.h
     engine_types.h
+    entry.hpp
     vk_initializers.cpp
     vk_initializers.h
     vk_descriptors.cpp
@@ -38,6 +39,7 @@ endif()
 # Debug target
 add_executable(debug
     main.cpp
+    entry.hpp
     engine.cpp
     engine.h
     engine_types.h
