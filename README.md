@@ -65,6 +65,8 @@
         - Proper lighting, if at minimum this means shadowmaps
 - [ ] Multi-API graphics
     - Vulkan was the first choice as a) I develop on linux and b) it's cross platform already to my other windows machine
+        - As of [9c1d1ad](https://github.com/mmorgan00/ProjectBulldog/commit/9c1d1ade00d5fd01d00b8154a1914d967b91971d), render module supports a backend abstraction from rest of the app
+        - Currently only supports Vulkan, however has the foundation to support other APIs.
     - [ ] DirectX
     - [ ] OpenGL -> for if I want to support older devices that don't support vulkan 1.3
     - [ ] Metal -> Apple support is something I would like to do at some point, but is not a priority
