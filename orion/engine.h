@@ -10,7 +10,7 @@
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
-#include "vk_mem_alloc.h"
+// #include "vk_mem_alloc.h"
 #include <vk_loader.h>
 
 struct ComputePushConstants {

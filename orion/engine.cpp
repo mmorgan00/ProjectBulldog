@@ -18,9 +18,9 @@
 #include <glm/gtx/transform.hpp>
 #include <thread>
 
-#define VMA_IMPLEMENTATION
+// #define VMA_IMPLEMENTATION
 #include "VkBootstrap.h"
-#include "vk_mem_alloc.h"
+// #include "vk_mem_alloc.h"
 
 using json = nlohmann::json;
 

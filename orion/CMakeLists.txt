@@ -3,6 +3,9 @@ add_executable(demo
   entry.hpp
   core/renderer.cpp
   core/renderer.hpp
+  core/renderer_backend.hpp
+  core/renderer_backends/vulkan/vulkan_backend.hpp
+  core/renderer_backends/vulkan/vulkan_backend.cpp
 )
 
 set_target_properties(demo PROPERTIES 
