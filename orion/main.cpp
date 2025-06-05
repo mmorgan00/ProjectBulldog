@@ -6,5 +6,6 @@ int main(int argc, char* argv[]) {
   renderer.init();
   init();
   run();
+  renderer.shutdown();
   return 0;
 }

@@ -39,6 +39,28 @@
 ### Engine API
 - A proper API is not yet available. As the previous version of the project was a rather hardcoded scene render from a GLB file, there is a good chunk of outstanding work to shift it to a more proper API. 
 - This section will be updated as progress is made
+#### Utils
+- Logging macro OE_LOG
+    ```cpp
+    // First declare a log group
+    DECLARE_LOG_CATEGORY(DEMO_CATEGORY)
+    // Using the log macro
+    OE_LOG(LOG_GROUP, SEVERITY, "format string {}", "format string arg");
+    ```
+    - It uses fmt under the hood for fstring, so use {} as the identifier. This should raise compiler errors if improperly formatted as such
+    - By default, TRACE severity logs are not output. This means by default, any trace logs used in engine intialization will not be produced. I believe this is fine, and they can be turned on for finer debugging.
+    - It can be changed by modifying this line in orion/util/logger.hpp:
+        ```cpp
+        Logger() : minVerbosity_(LOG_LEVEL::INFO) {}
+         ```
+        however I am intending to move this to configuration file rather than needing to recompile a header
+    - Alternatively, you can call this:
+    ```cpp
+    Logger::Get().SetMinVerbosity(LOG_LEVEL verbosity);
+    ```
+
+
+
 
 ### Feature roadmap
 - [x] Build system revamp

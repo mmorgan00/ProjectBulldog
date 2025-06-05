@@ -8,6 +8,8 @@ add_executable(demo
   core/renderer_backends/vulkan/vulkan_backend.cpp
   core/renderer_backends/vulkan/vulkan_initializers.hpp
   core/renderer_backends/vulkan/vulkan_initializers.cpp
+  util/containers.hpp
+  util/logger.hpp
 )
 
 set_target_properties(demo PROPERTIES 
@@ -15,5 +17,10 @@ set_target_properties(demo PROPERTIES
     COMPILE_FLAGS "${CMAKE_CXX_FLAGS_DEBUG}"
     LINK_FLAGS "${CMAKE_EXE_LINKER_FLAGS_DEBUG}"
 )
+
+target_include_directories(demo PUBLIC ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/util
+    ${CMAKE_SOURCE_DIR}/core
+    ${CMAKE_SOURCE_DIR}/core/renderer_backends/vulkan)
 
 target_link_libraries(demo OE_DEMO vma vkbootstrap Vulkan::Vulkan SDL2::SDL2 fmt::fmt)

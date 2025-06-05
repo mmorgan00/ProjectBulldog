@@ -6,4 +6,5 @@ class RendererBackend{
    */
   virtual bool init() = 0;
   virtual ~RendererBackend() = default;
+  virtual void shutdown() = 0;
 };

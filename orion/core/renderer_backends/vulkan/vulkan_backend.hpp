@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../util/containers.hpp"
+#include "../../../util/containers.hpp"
 #include <cstdint>
 #include <vulkan/vulkan.h>
 #include "vk_mem_alloc.h"
@@ -16,7 +16,7 @@
 class VulkanRendererBackend : public RendererBackend {
 public:
   bool init() override;
-  ~VulkanRendererBackend() override;
+  void shutdown() override;
 
 
 private:

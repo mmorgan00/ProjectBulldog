@@ -1,8 +1,8 @@
 #include "vulkan_backend.hpp"
 
+#include "../../../util/logger.hpp"
 #include <iostream>
 #include <vulkan/vulkan_core.h>
-
 #include <SDL.h>
 #include <SDL_vulkan.h>
 #include "VkBootstrap.h"
@@ -16,19 +16,20 @@ bool VulkanRendererBackend::init(){
   init_swapchain();
   return true;
 }
-
+DECLARE_LOG_CATEGORY(VULKAN_BACKEND)
 void VulkanRendererBackend::init_inst(){
    // Init SDL
   // Initialize SDL
   // TODO: Tuck into a 'platform init'
-  std::cout << "Initializing platform window" << std::endl;
+  OE_LOG(VULKAN_BACKEND, INFO, "Initializing platform window");
+
   SDL_Init(SDL_INIT_VIDEO);
   SDL_SetRelativeMouseMode(SDL_TRUE);
 
   SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
   _window = SDL_CreateWindow("ProjectBulldog", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, _windowExtent.width, _windowExtent.height, window_flags);
 
-  std::cout << "Renderer initializing" << std::endl;
+  OE_LOG(VULKAN_BACKEND, INFO, "Vulkan Renderer initializing for {}", "ProjectBulldog");
   
   // Initialize vulkan
 	//> init_instance
@@ -43,7 +44,7 @@ void VulkanRendererBackend::init_inst(){
 
 	vkb::Instance vkb_inst = inst_ret.value();
   if(!vkb_inst){
-    std::cout << "Unable to initialize vulkan" << std::endl;
+    OE_LOG(VULKAN_BACKEND, FATAL, "Unable to initialize Vulkan instance! Exiting...");
     exit(1);
   }
 	// grab the instance
@@ -51,12 +52,12 @@ void VulkanRendererBackend::init_inst(){
 	_debug_messenger = vkb_inst.debug_messenger;
 
 	//< init_instance
-  std::cout << "Vulkan instance created" << std::endl;
+  OE_LOG(VULKAN_BACKEND, TRACE, "Vulkan instance created");
 	//
 	//> init_device
 	SDL_Vulkan_CreateSurface(_window, _instance, &_surface);
 
-  std::cout << "SDL/Vulkan surface created" << std::endl;
+  OE_LOG(VULKAN_BACKEND, TRACE, "SDL-Vulkan surface created");
 	// vulkan 1.3 features
 	VkPhysicalDeviceVulkan13Features features{
 		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
@@ -79,14 +80,17 @@ void VulkanRendererBackend::init_inst(){
 		.set_surface(_surface)
 		.select()
 		.value();
- std::cout << "Physical device selected" << std::endl;
+  OE_LOG(VULKAN_BACKEND, TRACE, "Physical device selected");
 
 	// create the final vulkan device
 	vkb::DeviceBuilder deviceBuilder{ physicalDevice };
 
 	vkb::Device vkbDevice = deviceBuilder.build().value();
 
-  std::cout << "Physical device selected" << std::endl;
+  // Retrieve device properties to get the GPU name
+  VkPhysicalDeviceProperties device_properties;
+  vkGetPhysicalDeviceProperties(physicalDevice.physical_device, &device_properties);
+  OE_LOG(VULKAN_BACKEND, INFO, "Device selected : {}", device_properties.deviceName);
 
 	// Get the VkDevice handle used in the rest of a vulkan application
 	_device = vkbDevice.device;
@@ -99,7 +103,7 @@ void VulkanRendererBackend::init_inst(){
 	_graphicsQueueFamily =
 		vkbDevice.get_queue_index(vkb::QueueType::graphics).value();
 	//< init_queue
-  std::cout << "Queues selected" << std::endl;
+  OE_LOG(VULKAN_BACKEND, TRACE, "Queues selected");
 
 	//> init allocator
 	VmaAllocatorCreateInfo allocatorInfo = {};
@@ -192,7 +196,7 @@ void VulkanRendererBackend::init_swapchain(){
 	VK_CHECK(
 		vkCreateImageView(_device, &dview_info, nullptr, &_depthImage.imageView));
 
-  fmt::println("Vulkan swapchain created");
+  OE_LOG(VULKAN_BACKEND, TRACE, "Swapchain created"); 
 	// add to deletion queues
 	_mainDeletionQueue.push_function(
 		[_drawImageImageView = _drawImage.imageView,
@@ -210,5 +214,7 @@ void VulkanRendererBackend::init_swapchain(){
 
 }
 
-// TODO: Vulkan deletion queue
-VulkanRendererBackend::~VulkanRendererBackend(){}
+void VulkanRendererBackend::shutdown(){
+  OE_LOG(VULKAN_BACKEND, INFO, "Shutting down vulkan renderer");
+  _mainDeletionQueue.flush();
+}

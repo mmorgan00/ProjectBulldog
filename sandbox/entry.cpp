@@ -1,9 +1,11 @@
-#include <iostream>
+#include "util/logger.hpp"
 
+DECLARE_LOG_CATEGORY(SANDBOX);
 void init() {
-  std::cout << "Hello from entry.cpp init" << std::endl;
+  Logger::Get().SetMinVerbosity(LOG_LEVEL::TRACE);
+  OE_LOG(SANDBOX, TRACE, "Sandbox demo initializing");
 }
 
 void run() {
-  std::cout << "Hello from entry.cpp" << std::endl;
+  OE_LOG(SANDBOX, INFO, "Sandbox demo starting");
 }
