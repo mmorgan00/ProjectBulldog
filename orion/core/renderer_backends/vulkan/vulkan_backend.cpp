@@ -6,18 +6,19 @@
 #include <SDL.h>
 #include <SDL_vulkan.h>
 #include "VkBootstrap.h"
+#include "core/engine_types.hpp"
 
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
 
-bool VulkanRendererBackend::init(){
-  init_inst();
+bool VulkanRendererBackend::init(app_state& state){
+  init_inst(state);
   init_swapchain();
   return true;
 }
 DECLARE_LOG_CATEGORY(VULKAN_BACKEND)
-void VulkanRendererBackend::init_inst(){
+void VulkanRendererBackend::init_inst(app_state& state){
    // Init SDL
   // Initialize SDL
   // TODO: Tuck into a 'platform init'
@@ -27,9 +28,9 @@ void VulkanRendererBackend::init_inst(){
   SDL_SetRelativeMouseMode(SDL_TRUE);
 
   SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
-  _window = SDL_CreateWindow("ProjectBulldog", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, _windowExtent.width, _windowExtent.height, window_flags);
+  _window = SDL_CreateWindow(state.appName.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, _windowExtent.width, _windowExtent.height, window_flags);
 
-  OE_LOG(VULKAN_BACKEND, INFO, "Vulkan Renderer initializing for {}", "ProjectBulldog");
+  OE_LOG(VULKAN_BACKEND, INFO, "Vulkan Renderer initializing for {}", state.appName);
   
   // Initialize vulkan
 	//> init_instance

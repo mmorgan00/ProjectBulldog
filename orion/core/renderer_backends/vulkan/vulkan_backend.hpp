@@ -15,13 +15,13 @@
 
 class VulkanRendererBackend : public RendererBackend {
 public:
-  bool init() override;
+  bool init(app_state& state) override;
   void shutdown() override;
 
 
 private:
   // Initializes Vulkan instance, devices, and queues
-  void init_inst();
+  void init_inst(app_state& state);
   // Initializes starting swapchain
   void init_swapchain();
 

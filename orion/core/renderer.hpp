@@ -5,7 +5,7 @@
 class Renderer{
 public:
 
-void init();
+void init(app_state& state);
 void shutdown();
 private:
 
