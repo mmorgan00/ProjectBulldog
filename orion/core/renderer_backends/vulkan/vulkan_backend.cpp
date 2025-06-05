@@ -15,8 +15,8 @@ bool VulkanRendererBackend::init(app_state &state) {
   init_inst(state);
   init_swapchain();
   init_commands();
+  init_sync_structures();
   // TODO:
-  // init_sync_structures();
   // init_descriptors();
   // init_pipelines();
   // init_imgui();
@@ -261,4 +261,33 @@ void VulkanRendererBackend::init_commands() {
 void VulkanRendererBackend::shutdown() {
   OE_LOG(VULKAN_BACKEND, INFO, "Shutting down vulkan renderer");
   _mainDeletionQueue.flush();
+}
+
+void VulkanRendererBackend::init_sync_structures(){
+	// create syncronization structures
+	// one fence to control when the gpu has finished rendering the frame,
+	// and 2 semaphores to syncronize rendering with swapchain
+	// we want the fence to start signalled so we can wait on it on the first
+	// frame
+	VkFenceCreateInfo fenceCreateInfo =
+		vkinit::fence_create_info(VK_FENCE_CREATE_SIGNALED_BIT);
+	VkSemaphoreCreateInfo semaphoreCreateInfo = vkinit::semaphore_create_info(0);
+
+	for (int i = 0; i < FRAME_OVERLAP; i++) {
+		VK_CHECK(vkCreateFence(_device, &fenceCreateInfo, nullptr,
+			&_frames[i]._renderFence));
+
+		VK_CHECK(vkCreateSemaphore(_device, &semaphoreCreateInfo, nullptr,
+			&_frames[i]._swapchainSemaphore));
+		VK_CHECK(vkCreateSemaphore(_device, &semaphoreCreateInfo, nullptr,
+			&_frames[i]._renderSemaphore));
+	}
+	// Immediate fence
+	VK_CHECK(vkCreateFence(_device, &fenceCreateInfo, nullptr, &_immFence));
+
+  OE_LOG(VULKAN_BACKEND, INFO, "Sync structures created");
+
+	_mainDeletionQueue.push_function(
+		[this]() { vkDestroyFence(_device, _immFence, nullptr); });
+
 }

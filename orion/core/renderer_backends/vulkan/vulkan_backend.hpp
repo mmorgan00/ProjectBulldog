@@ -40,6 +40,8 @@ private:
   void init_swapchain();
   // Inits command pools and buffers
   void init_commands();
+  // Initializes fences and semaphores for each frame
+  void init_sync_structures();
 
   void create_swapchain(uint32_t width, uint32_t height);
 
