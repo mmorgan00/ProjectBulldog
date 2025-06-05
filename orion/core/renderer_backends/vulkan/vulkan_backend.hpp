@@ -1,18 +1,35 @@
 #pragma once
 
+#include "../../util/containers.hpp"
+#include <cstdint>
 #include <vulkan/vulkan.h>
 #include "vk_mem_alloc.h"
+#include "vulkan_initializers.hpp"
+#include <vector>
 
-
+#include "vulkan_types.hpp"
 #include "../../renderer_backend.hpp"
+
+
+
 
 class VulkanRendererBackend : public RendererBackend {
 public:
-  bool init();
-  ~VulkanRendererBackend();
+  bool init() override;
+  ~VulkanRendererBackend() override;
 
 
 private:
+  // Initializes Vulkan instance, devices, and queues
+  void init_inst();
+  // Initializes starting swapchain
+  void init_swapchain();
+
+
+  void create_swapchain(uint32_t width, uint32_t height);
+
+  DeletionQueue _mainDeletionQueue;
+
   // Window resources
   VkExtent2D _windowExtent{1700, 900};
     // Vulkan resources
@@ -25,6 +42,26 @@ private:
   // Queues
   VkQueue _graphicsQueue;
   uint32_t _graphicsQueueFamily;
+
+  // Swapchain resources
+  VkSwapchainKHR _swapchain;
+  VkFormat _swapchainImageFormat;
+
+  std::vector<VkImage> _swapchainImages;
+  std::vector<VkImageView> _swapchainImageViews;
+  VkExtent2D _swapchainExtent;
+
+  VkDescriptorSet _drawImageDescriptors;
+  VkDescriptorSetLayout _drawImageDescriptorLayout;
+
+
+  // Draw resources
+  AllocatedImage _drawImage;
+  AllocatedImage _depthImage;
+  VkExtent2D _drawExtent;
+  float renderScale = 1.f;
+
+
 
                                               
   // Window

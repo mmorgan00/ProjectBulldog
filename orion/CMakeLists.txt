@@ -6,6 +6,8 @@ add_executable(demo
   core/renderer_backend.hpp
   core/renderer_backends/vulkan/vulkan_backend.hpp
   core/renderer_backends/vulkan/vulkan_backend.cpp
+  core/renderer_backends/vulkan/vulkan_initializers.hpp
+  core/renderer_backends/vulkan/vulkan_initializers.cpp
 )
 
 set_target_properties(demo PROPERTIES 
@@ -14,4 +16,4 @@ set_target_properties(demo PROPERTIES
     LINK_FLAGS "${CMAKE_EXE_LINKER_FLAGS_DEBUG}"
 )
 
-target_link_libraries(demo OE_DEMO vma vkbootstrap Vulkan::Vulkan SDL2::SDL2)
+target_link_libraries(demo OE_DEMO vma vkbootstrap Vulkan::Vulkan SDL2::SDL2 fmt::fmt)

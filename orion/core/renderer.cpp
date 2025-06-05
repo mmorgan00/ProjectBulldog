@@ -1,11 +1,13 @@
 #include "renderer.hpp"
+#include "renderer_backend.hpp"
 #include "renderer_backends/vulkan/vulkan_backend.hpp"
 
 
 void Renderer::init() {
   // Instantiate the backend
-  VulkanRendererBackend rb;
-  rb.init();
+  RendererBackend* backend;
+  backend = new VulkanRendererBackend();
+  backend->init();
 }
 
 
