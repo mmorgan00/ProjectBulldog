@@ -29,8 +29,6 @@ void VulkanRendererBackend::init_inst(app_state& state){
 
   SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
   _window = SDL_CreateWindow(state.appName.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, _windowExtent.width, _windowExtent.height, window_flags);
-
-  OE_LOG(VULKAN_BACKEND, INFO, "Vulkan Renderer initializing for {}", state.appName);
   
   // Initialize vulkan
 	//> init_instance

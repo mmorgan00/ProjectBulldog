@@ -8,6 +8,7 @@ DECLARE_LOG_CATEGORY(RENDERER);
 void Renderer::init(app_state& state) {
   if(state.graphicsAPI == "Vulkan"){
   // Instantiate the backend
+  OE_LOG(RENDERER, INFO, "Initializing Vulkan renderer");
   backend = new VulkanRendererBackend();
   backend->init(state);
 
