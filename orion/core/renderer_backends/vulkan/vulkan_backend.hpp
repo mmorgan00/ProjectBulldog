@@ -5,12 +5,26 @@
 #include <vulkan/vulkan.h>
 #include "vk_mem_alloc.h"
 #include "vulkan_initializers.hpp"
+#include "vulkan_descriptors.hpp"
 #include <vector>
 
 #include "vulkan_types.hpp"
 #include "../../renderer_backend.hpp"
 
 
+
+constexpr unsigned int FRAME_OVERLAP = 2;
+
+struct FrameData {
+  VkSemaphore _swapchainSemaphore, _renderSemaphore;
+  VkFence _renderFence;
+
+  VkCommandPool _commandPool;
+  VkCommandBuffer _mainCommandBuffer;
+
+  DeletionQueue _deletionQueue;
+  DescriptorAllocatorGrowable _frameDescriptors;
+};
 
 
 class VulkanRendererBackend : public RendererBackend {
@@ -24,7 +38,8 @@ private:
   void init_inst(app_state& state);
   // Initializes starting swapchain
   void init_swapchain();
-
+  // Inits command pools and buffers
+  void init_commands();
 
   void create_swapchain(uint32_t width, uint32_t height);
 
@@ -54,6 +69,15 @@ private:
   VkDescriptorSet _drawImageDescriptors;
   VkDescriptorSetLayout _drawImageDescriptorLayout;
 
+  
+  FrameData _frames[FRAME_OVERLAP];
+
+  // Immediates
+  VkFence _immFence;
+  VkCommandBuffer _immCommandBuffer;
+  VkCommandPool _immCommandPool;
+
+
 
   // Draw resources
   AllocatedImage _drawImage;
@@ -66,6 +90,6 @@ private:
                                               
   // Window
   struct SDL_Window* _window{nullptr};
-
-
 };
+
+
