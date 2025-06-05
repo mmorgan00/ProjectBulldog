@@ -23,4 +23,4 @@ target_include_directories(demo PUBLIC ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/core
     ${CMAKE_SOURCE_DIR}/core/renderer_backends/vulkan)
 
-target_link_libraries(demo OE_DEMO vma vkbootstrap Vulkan::Vulkan SDL2::SDL2 fmt::fmt)
+target_link_libraries(demo OE_DEMO vma vkbootstrap Vulkan::Vulkan SDL2::SDL2 fmt::fmt simdjson::simdjson)

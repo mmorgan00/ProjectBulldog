@@ -3,6 +3,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 project(ProjectBulldog)
 
 find_package(Vulkan REQUIRED)
+find_package(simdjson REQUIRED)
 
 add_subdirectory(sandbox)
 

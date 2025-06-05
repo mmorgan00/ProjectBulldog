@@ -1,4 +1,5 @@
 find_package(Vulkan REQUIRED)
+find_package(simdjson REQUIRED)
 
 add_library(vkbootstrap STATIC)
 add_library(nlohmann INTERFACE)
