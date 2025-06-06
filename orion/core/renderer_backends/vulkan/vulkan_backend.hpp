@@ -42,10 +42,19 @@ private:
   void init_commands();
   // Initializes fences and semaphores for each frame
   void init_sync_structures();
+  // Initializes descriptor sets for shaders
+  void init_descriptors();
+  // 
+  void init_pipelines();
+  //Pipeline create functions
+  //TODO: Hardcoding each pipeline create function will not scale
+  void init_mesh_pipeline();
+
 
   void create_swapchain(uint32_t width, uint32_t height);
 
   DeletionQueue _mainDeletionQueue;
+  DescriptorAllocatorGrowable globalDescriptorAllocator;
 
   // Window resources
   VkExtent2D _windowExtent{1700, 900};
@@ -87,8 +96,14 @@ private:
   VkExtent2D _drawExtent;
   float renderScale = 1.f;
 
+  //< mesh pipeline
+  VkPipelineLayout _meshPipelineLayout;
+  VkPipeline _meshPipeline;
+  //> mesh pipeline
 
 
+  VkDescriptorSetLayout _gpuSceneDataDescriptorLayout;
+  VkDescriptorSetLayout _singleImageDescriptorLayout;
                                               
   // Window
   struct SDL_Window* _window{nullptr};

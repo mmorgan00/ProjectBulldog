@@ -8,6 +8,10 @@ add_executable(demo
   core/renderer_backends/vulkan/vulkan_backend.cpp
   core/renderer_backends/vulkan/vulkan_initializers.hpp
   core/renderer_backends/vulkan/vulkan_initializers.cpp
+  core/renderer_backends/vulkan/vulkan_descriptors.hpp
+  core/renderer_backends/vulkan/vulkan_descriptors.cpp
+  core/renderer_backends/vulkan/vulkan_pipelines.hpp
+  core/renderer_backends/vulkan/vulkan_pipelines.cpp
   util/containers.hpp
   util/logger.hpp
 )
@@ -23,4 +27,4 @@ target_include_directories(demo PUBLIC ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/core
     ${CMAKE_SOURCE_DIR}/core/renderer_backends/vulkan)
 
-target_link_libraries(demo OE_DEMO vma vkbootstrap Vulkan::Vulkan SDL2::SDL2 fmt::fmt simdjson::simdjson)
+target_link_libraries(demo OE_DEMO vma glm vkbootstrap Vulkan::Vulkan SDL2::SDL2 fmt::fmt simdjson::simdjson)

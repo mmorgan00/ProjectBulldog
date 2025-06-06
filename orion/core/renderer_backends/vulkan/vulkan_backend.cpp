@@ -1,24 +1,26 @@
 #include "vulkan_backend.hpp"
 
-#include "../../../util/logger.hpp"
+#include "util/logger.hpp"
 #include "VkBootstrap.h"
 #include "core/engine_types.hpp"
 #include <SDL.h>
 #include <SDL_vulkan.h>
-#include <iostream>
 #include <vulkan/vulkan_core.h>
+#include "vulkan_pipelines.hpp"
 
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
+
+
 
 bool VulkanRendererBackend::init(app_state &state) {
   init_inst(state);
   init_swapchain();
   init_commands();
   init_sync_structures();
+  init_descriptors();
+  init_pipelines();
   // TODO:
-  // init_descriptors();
-  // init_pipelines();
   // init_imgui();
   // init_default_data();
   //
@@ -289,5 +291,153 @@ void VulkanRendererBackend::init_sync_structures(){
 
 	_mainDeletionQueue.push_function(
 		[this]() { vkDestroyFence(_device, _immFence, nullptr); });
+
+}
+
+void VulkanRendererBackend::init_descriptors(){
+	// create a descriptor pool that will hold 10 sets with 1 image each
+	std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {
+		{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1} };
+
+		globalDescriptorAllocator.init(_device, 10,
+            sizes);
+
+	// make the descriptor set layout for our compute draw
+	{
+		DescriptorLayoutBuilder builder;
+		builder.add_binding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		_drawImageDescriptorLayout =
+			builder.build(_device, VK_SHADER_STAGE_COMPUTE_BIT);
+	}
+
+	// make the global descriptor set layout for the gemoetry render pass
+	{
+		DescriptorLayoutBuilder builder;
+		builder.add_binding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		_gpuSceneDataDescriptorLayout = builder.build(
+			_device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+	}
+
+	// Allocate the texture DescriptorLayout
+	{
+		DescriptorLayoutBuilder builder;
+		builder.add_binding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		_singleImageDescriptorLayout = builder.build(_device, VK_SHADER_STAGE_FRAGMENT_BIT);
+	}
+
+	// allocate a descriptor set for our draw image
+	_drawImageDescriptors =
+		globalDescriptorAllocator.allocate(_device, _drawImageDescriptorLayout);
+
+	DescriptorWriter writer;
+	writer.write_image(0, _drawImage.imageView, VK_NULL_HANDLE,
+		VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+
+	writer.update_set(_device, _drawImageDescriptors);
+	// make sure both the descriptor allocator and the new layout get cleaned up
+	// properly
+
+	for (int i = 0; i < FRAME_OVERLAP; i++) {
+		// create a descriptor pool
+		std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> frame_sizes = {
+			{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3},
+			{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3},
+			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
+			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4},
+		};
+
+		_frames[i]._frameDescriptors = DescriptorAllocatorGrowable{};
+		_frames[i]._frameDescriptors.init(_device, 1000, frame_sizes);
+
+		_mainDeletionQueue.push_function(
+			[&, i]() { _frames[i]._frameDescriptors.destroy_pools(_device); });
+	}
+
+  OE_LOG(VULKAN_BACKEND, INFO, "Descriptor Layouts allocated");
+
+	_mainDeletionQueue.push_function([&]() {
+
+		vkDestroyDescriptorSetLayout(_device, _drawImageDescriptorLayout, nullptr);
+		});
+
+}
+
+/**
+ * @brief Initializes pipes for rendering
+ * @detail Currently initializes all pipelines used due to low overhead
+ */
+void VulkanRendererBackend::init_pipelines(){
+//TODO: Configurable/runtime decision on what pipelines are compiled at source
+  init_mesh_pipeline();
+}
+
+void VulkanRendererBackend::init_mesh_pipeline(){
+	VkShaderModule triangleFragShader;
+	if (!vkutil::load_shader_module("../../shaders/tex_image.frag.spv",
+		_device, &triangleFragShader)) {
+    OE_LOG(VULKAN_BACKEND, INFO, "Error building default mesh fragment shader");
+	}
+	else {
+    OE_LOG(VULKAN_BACKEND, INFO, "Default mesh fragment shader successfully loaded");
+	}
+
+	VkShaderModule triangleVertexShader;
+	if (!vkutil::load_shader_module("../../shaders/colored_triangle_mesh.vert.spv",
+		_device, &triangleVertexShader)) {
+    OE_LOG(VULKAN_BACKEND, INFO, "Error building default mesh vertext shader");
+	}
+	else {
+    OE_LOG(VULKAN_BACKEND, INFO, "Default mesh vertex shader successfully loaded");
+	}
+
+	VkPushConstantRange bufferRange{};
+	bufferRange.offset = 0;
+	bufferRange.size = sizeof(GPUDrawPushConstants);
+	bufferRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+	VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
+	pipeline_layout_info.pPushConstantRanges = &bufferRange;
+	pipeline_layout_info.pushConstantRangeCount = 1;
+	pipeline_layout_info.pSetLayouts = &_singleImageDescriptorLayout;
+	pipeline_layout_info.setLayoutCount = 1;
+	VK_CHECK(vkCreatePipelineLayout(_device, &pipeline_layout_info, nullptr, &_meshPipelineLayout));
+
+	PipelineBuilder pipelineBuilder;
+
+	// use the triangle layout we created
+	pipelineBuilder._pipelineLayout = _meshPipelineLayout;
+	// connecting the vertex and pixel shaders to the pipeline
+	pipelineBuilder.set_shaders(triangleVertexShader, triangleFragShader);
+	// it will draw triangles
+	pipelineBuilder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	// filled triangles
+	pipelineBuilder.set_polygon_mode(VK_POLYGON_MODE_FILL);
+	// no backface culling
+	pipelineBuilder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+	// no multisampling
+	pipelineBuilder.set_multisampling_none();
+	//  blending
+	// pipelineBuilder.disable_blending();
+	pipelineBuilder.enable_blending_additive();
+	// pipelineBuilder.enable_blending_alphablend();
+
+	// pipelineBuilder.disable_depthtest();
+	pipelineBuilder.enable_depthtest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
+
+	// connect the image format we will draw into, from draw image
+	pipelineBuilder.set_color_attachment_format(_drawImage.imageFormat);
+	pipelineBuilder.set_depth_format(
+		_depthImage.imageFormat);  // finally build the pipeline
+
+	_meshPipeline = pipelineBuilder.build_pipeline(_device);
+
+	// clean structures
+	vkDestroyShaderModule(_device, triangleFragShader, nullptr);
+	vkDestroyShaderModule(_device, triangleVertexShader, nullptr);
+
+	_mainDeletionQueue.push_function([&]() {
+		vkDestroyPipelineLayout(_device, _meshPipelineLayout, nullptr);
+		vkDestroyPipeline(_device, _meshPipeline, nullptr);
+		});
 
 }

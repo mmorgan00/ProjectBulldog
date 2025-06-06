@@ -5,6 +5,9 @@
 #include <vk_mem_alloc.h>
 #include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vulkan.h>
+#include <vector>
+#include <glm/vec4.hpp>
+#include <glm/mat4x4.hpp>
 
 
 
@@ -14,6 +17,11 @@ struct AllocatedImage {
   VmaAllocation allocation;
   VkExtent3D imageExtent;
   VkFormat imageFormat;
+};
+
+struct GPUDrawPushConstants {
+  glm::mat4 worldMatrix;
+  VkDeviceAddress vertexBuffer;
 };
 
 
