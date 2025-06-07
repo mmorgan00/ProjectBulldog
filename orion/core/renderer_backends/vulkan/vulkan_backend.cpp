@@ -1,24 +1,167 @@
 #include "vulkan_backend.hpp"
 
-#include "util/logger.hpp"
 #include "VkBootstrap.h"
 #include "core/engine_types.hpp"
+#include "util/logger.hpp"
+#include "vulkan_images.hpp"
+#include "vulkan_pipelines.hpp"
 #include <SDL.h>
 #include <SDL_vulkan.h>
 #include <vulkan/vulkan_core.h>
-#include "vulkan_pipelines.hpp"
 
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
+DECLARE_LOG_CATEGORY(VULKAN_BACKEND)
+void VulkanRendererBackend::run() {
 
+  VK_CHECK(vkWaitForFences(_device, 1, &get_current_frame()._renderFence, true,
+                           1000000000));
+
+  //< pt 1 Reset from previous frame and capture window size
+  get_current_frame()._deletionQueue.flush();
+  get_current_frame()._frameDescriptors.clear_pools(_device);
+  _drawExtent.height =
+      std::min(_swapchainExtent.height, _drawImage.imageExtent.height) *
+      renderScale;
+  _drawExtent.width =
+      std::min(_swapchainExtent.width, _drawImage.imageExtent.width) *
+      renderScale;
+
+  VK_CHECK(vkResetFences(_device, 1, &get_current_frame()._renderFence));
+  //< pt 1
+
+  //> pt 2 request image from the swapchain
+  uint32_t swapchainImageIndex;
+  VkResult e = vkAcquireNextImageKHR(_device, _swapchain, 1000000000,
+                                     get_current_frame()._swapchainSemaphore,
+                                     nullptr, &swapchainImageIndex);
+  // if (e == VK_ERROR_OUT_OF_DATE_KHR) {
+  // resize_requested = true;
+  // return;
+  // } //< pt 2
+
+  //> pt 3 prepare command buffer
+  VkCommandBuffer cmd = get_current_frame()._mainCommandBuffer;
+
+  // now that we are sure that the commands finished executing, we can safely
+  // reset the command buffer to begin recording again.
+  VK_CHECK(vkResetCommandBuffer(cmd, 0));
+
+  // begin the command buffer recording. We will use this command buffer exactly
+  // once, so we want to let vulkan know that
+  VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(
+      VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+  // pt 3
+
+  //< Record command buffer
+  VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
+
+  // transition our main draw image into general layout so we can write into it
+  // we will overwrite it all so we dont care about what was the older layout
+  vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                           VK_IMAGE_LAYOUT_GENERAL);
+
+  // draw_background(cmd);
+
+  vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL,
+                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+  vkutil::transition_image(cmd, _depthImage.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                           VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+  // draw_geometry(cmd);
+
+  // transtion the draw image and the swapchain image into their correct
+  // transfer layouts
+  vkutil::transition_image(cmd, _drawImage.image,
+                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                           VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+  vkutil::transition_image(cmd, _swapchainImages[swapchainImageIndex],
+                           VK_IMAGE_LAYOUT_UNDEFINED,
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+  // transfer layouts
+  vkutil::transition_image(cmd, _swapchainImages[swapchainImageIndex],
+                           VK_IMAGE_LAYOUT_UNDEFINED,
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+  // execute a copy from the draw image into the swapchain
+  vkutil::copy_image_to_image(cmd, _drawImage.image,
+                              _swapchainImages[swapchainImageIndex],
+                              _drawExtent, _swapchainExtent);
+
+  // set swapchain image layout to Attachment Optimal so we can draw it
+  vkutil::transition_image(cmd, _swapchainImages[swapchainImageIndex],
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+  // draw imgui into the swapchain image
+  // draw_imgui(cmd, _swapchainImageViews[swapchainImageIndex]);
+
+  // set swapchain image layout to Present so we can draw it
+  vkutil::transition_image(cmd, _swapchainImages[swapchainImageIndex],
+                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                           VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+  // finalize the command buffer (we can no longer add commands, but it can now
+  // be executed)
+  VK_CHECK(vkEndCommandBuffer(cmd)); //> end record command buffer
+
+  //> draw_5
+  // prepare the submission to the queue.
+  // we want to wait on the _presentSemaphore, as that semaphore is signaled
+  // when the swapchain is ready we will signal the _renderSemaphore, to signal
+  // that rendering has finished
+
+  VkCommandBufferSubmitInfo cmdinfo = vkinit::command_buffer_submit_info(cmd);
+
+  VkSemaphoreSubmitInfo waitInfo = vkinit::semaphore_submit_info(
+      VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR,
+      get_current_frame()._swapchainSemaphore);
+  VkSemaphoreSubmitInfo signalInfo =
+      vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
+                                    get_current_frame()._renderSemaphore);
+
+  VkSubmitInfo2 submit = vkinit::submit_info(&cmdinfo, &signalInfo, &waitInfo);
+
+  // submit command buffer to the queue and execute it.
+  //  _renderFence will now block until the graphic commands finish execution
+  VK_CHECK(vkQueueSubmit2(_graphicsQueue, 1, &submit,
+                          get_current_frame()._renderFence));
+  //< draw_5
+  //
+  //> draw_6
+  // prepare present
+  // this will put the image we just rendered to into the visible window.
+  // we want to wait on the _renderSemaphore for that,
+  // as its necessary that drawing commands have finished before the image is
+  // displayed to the user
+  VkPresentInfoKHR presentInfo = {};
+  presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+  presentInfo.pNext = nullptr;
+  presentInfo.pSwapchains = &_swapchain;
+  presentInfo.swapchainCount = 1;
+
+  presentInfo.pWaitSemaphores = &get_current_frame()._renderSemaphore;
+  presentInfo.waitSemaphoreCount = 1;
+
+  presentInfo.pImageIndices = &swapchainImageIndex;
+
+  VkResult presentResult = vkQueuePresentKHR(_graphicsQueue, &presentInfo);
+  // if (presentResult == VK_ERROR_OUT_OF_DATE_KHR) {
+  //   resize_requested = true;
+  // }
+  // increase the number of frames drawn
+  _frameNumber++;
+
+  //< draw_6
+}
 
 bool VulkanRendererBackend::init(app_state &state) {
   init_inst(state);
   init_swapchain();
   init_commands();
   init_sync_structures();
-  init_descriptors();
+  init_descriptors(); // not rendering anything however. 
   init_pipelines();
   // TODO:
   // init_imgui();
@@ -26,7 +169,6 @@ bool VulkanRendererBackend::init(app_state &state) {
   //
   return true;
 }
-DECLARE_LOG_CATEGORY(VULKAN_BACKEND)
 void VulkanRendererBackend::init_inst(app_state &state) {
   // Init SDL
   // Initialize SDL
@@ -260,105 +402,141 @@ void VulkanRendererBackend::init_commands() {
       [this]() { vkDestroyCommandPool(_device, _immCommandPool, nullptr); });
 }
 
-void VulkanRendererBackend::shutdown() {
-  OE_LOG(VULKAN_BACKEND, INFO, "Shutting down vulkan renderer");
-  _mainDeletionQueue.flush();
+void VulkanRendererBackend::destroy_swapchain(){
+	vkDestroySwapchainKHR(_device, _swapchain, nullptr);
+
+	// destroy swapchain resources
+	for (int i = 0; i < _swapchainImageViews.size(); i++) {
+		vkDestroyImageView(_device, _swapchainImageViews[i], nullptr);
+	}
 }
 
-void VulkanRendererBackend::init_sync_structures(){
-	// create syncronization structures
-	// one fence to control when the gpu has finished rendering the frame,
-	// and 2 semaphores to syncronize rendering with swapchain
-	// we want the fence to start signalled so we can wait on it on the first
-	// frame
-	VkFenceCreateInfo fenceCreateInfo =
-		vkinit::fence_create_info(VK_FENCE_CREATE_SIGNALED_BIT);
-	VkSemaphoreCreateInfo semaphoreCreateInfo = vkinit::semaphore_create_info(0);
+void VulkanRendererBackend::shutdown() {
+  vkDeviceWaitIdle(_device);
 
-	for (int i = 0; i < FRAME_OVERLAP; i++) {
-		VK_CHECK(vkCreateFence(_device, &fenceCreateInfo, nullptr,
-			&_frames[i]._renderFence));
+  OE_LOG(VULKAN_BACKEND, INFO, "Shutting down vulkan renderer");
 
-		VK_CHECK(vkCreateSemaphore(_device, &semaphoreCreateInfo, nullptr,
-			&_frames[i]._swapchainSemaphore));
-		VK_CHECK(vkCreateSemaphore(_device, &semaphoreCreateInfo, nullptr,
-			&_frames[i]._renderSemaphore));
-	}
-	// Immediate fence
-	VK_CHECK(vkCreateFence(_device, &fenceCreateInfo, nullptr, &_immFence));
+  for (int i = 0; i < FRAME_OVERLAP; i++) {
+    vkDestroyCommandPool(_device, _frames[i]._commandPool, nullptr);
+
+    // destroy sync objects
+    vkDestroyFence(_device, _frames[i]._renderFence, nullptr);
+    vkDestroySemaphore(_device, _frames[i]._renderSemaphore, nullptr);
+    vkDestroySemaphore(_device, _frames[i]._swapchainSemaphore, nullptr);
+
+    _frames[i]._deletionQueue.flush();
+  }
+  globalDescriptorAllocator.clear_pools(_device);
+  _mainDeletionQueue.flush();
+  destroy_swapchain();
+
+  vkDestroySurfaceKHR(_instance, _surface, nullptr);
+
+  vkDestroyDevice(_device, nullptr);
+  vkb::destroy_debug_utils_messenger(_instance, _debug_messenger);
+  vkDestroyInstance(_instance, nullptr);
+}
+
+void VulkanRendererBackend::init_sync_structures() {
+  // create syncronization structures
+  // one fence to control when the gpu has finished rendering the frame,
+  // and 2 semaphores to syncronize rendering with swapchain
+  // we want the fence to start signalled so we can wait on it on the first
+  // frame
+  VkFenceCreateInfo fenceCreateInfo =
+      vkinit::fence_create_info(VK_FENCE_CREATE_SIGNALED_BIT);
+  VkSemaphoreCreateInfo semaphoreCreateInfo = vkinit::semaphore_create_info(0);
+
+  for (int i = 0; i < FRAME_OVERLAP; i++) {
+    VK_CHECK(vkCreateFence(_device, &fenceCreateInfo, nullptr,
+                           &_frames[i]._renderFence));
+
+    VK_CHECK(vkCreateSemaphore(_device, &semaphoreCreateInfo, nullptr,
+                               &_frames[i]._swapchainSemaphore));
+    VK_CHECK(vkCreateSemaphore(_device, &semaphoreCreateInfo, nullptr,
+                               &_frames[i]._renderSemaphore));
+  }
+  // Immediate fence
+  VK_CHECK(vkCreateFence(_device, &fenceCreateInfo, nullptr, &_immFence));
 
   OE_LOG(VULKAN_BACKEND, INFO, "Sync structures created");
 
-	_mainDeletionQueue.push_function(
-		[this]() { vkDestroyFence(_device, _immFence, nullptr); });
-
+  _mainDeletionQueue.push_function(
+      [this]() { vkDestroyFence(_device, _immFence, nullptr); });
 }
 
-void VulkanRendererBackend::init_descriptors(){
-	// create a descriptor pool that will hold 10 sets with 1 image each
-	std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {
-		{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1} };
+void VulkanRendererBackend::init_descriptors() {
+  // create a descriptor pool that will hold 10 sets with 1 image each
+  std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {
+      {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}};
 
-		globalDescriptorAllocator.init(_device, 10,
-            sizes);
+  globalDescriptorAllocator.init(_device, 10, sizes);
 
-	// make the descriptor set layout for our compute draw
-	{
-		DescriptorLayoutBuilder builder;
-		builder.add_binding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-		_drawImageDescriptorLayout =
-			builder.build(_device, VK_SHADER_STAGE_COMPUTE_BIT);
-	}
+  // make the descriptor set layout for our compute draw
+  {
+    DescriptorLayoutBuilder builder;
+    builder.add_binding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    _drawImageDescriptorLayout =
+        builder.build(_device, VK_SHADER_STAGE_COMPUTE_BIT);
+  }
 
-	// make the global descriptor set layout for the gemoetry render pass
-	{
-		DescriptorLayoutBuilder builder;
-		builder.add_binding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		_gpuSceneDataDescriptorLayout = builder.build(
-			_device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-	}
+  // make the global descriptor set layout for the gemoetry render pass
+  {
+    DescriptorLayoutBuilder builder;
+    builder.add_binding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    _gpuSceneDataDescriptorLayout = builder.build(
+        _device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+  }
 
-	// Allocate the texture DescriptorLayout
-	{
-		DescriptorLayoutBuilder builder;
-		builder.add_binding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		_singleImageDescriptorLayout = builder.build(_device, VK_SHADER_STAGE_FRAGMENT_BIT);
-	}
+  // Allocate the texture DescriptorLayout
+  {
+    DescriptorLayoutBuilder builder;
+    builder.add_binding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    _singleImageDescriptorLayout =
+        builder.build(_device, VK_SHADER_STAGE_FRAGMENT_BIT);
+  }
 
-	// allocate a descriptor set for our draw image
-	_drawImageDescriptors =
-		globalDescriptorAllocator.allocate(_device, _drawImageDescriptorLayout);
+  // allocate a descriptor set for our draw image
+  _drawImageDescriptors =
+      globalDescriptorAllocator.allocate(_device, _drawImageDescriptorLayout);
 
-	DescriptorWriter writer;
-	writer.write_image(0, _drawImage.imageView, VK_NULL_HANDLE,
-		VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+  DescriptorWriter writer;
+  writer.write_image(0, _drawImage.imageView, VK_NULL_HANDLE,
+                     VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
-	writer.update_set(_device, _drawImageDescriptors);
-	// make sure both the descriptor allocator and the new layout get cleaned up
-	// properly
+  writer.update_set(_device, _drawImageDescriptors);
+  // make sure both the descriptor allocator and the new layout get cleaned up
+  // properly
 
-	for (int i = 0; i < FRAME_OVERLAP; i++) {
-		// create a descriptor pool
-		std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> frame_sizes = {
-			{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3},
-			{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3},
-			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
-			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4},
-		};
+  for (int i = 0; i < FRAME_OVERLAP; i++) {
+    // create a descriptor pool
+    std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> frame_sizes = {
+        {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3},
+        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
+        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4},
+    };
 
-		_frames[i]._frameDescriptors = DescriptorAllocatorGrowable{};
-		_frames[i]._frameDescriptors.init(_device, 1000, frame_sizes);
+    _frames[i]._frameDescriptors = DescriptorAllocatorGrowable{};
+    _frames[i]._frameDescriptors.init(_device, 1000, frame_sizes);
 
-		_mainDeletionQueue.push_function(
-			[&, i]() { _frames[i]._frameDescriptors.destroy_pools(_device); });
-	}
+    _mainDeletionQueue.push_function(
+        [&, i]() { _frames[i]._frameDescriptors.destroy_pools(_device); });
+  }
 
   OE_LOG(VULKAN_BACKEND, INFO, "Descriptor Layouts allocated");
 
-	_mainDeletionQueue.push_function([&]() {
+  _mainDeletionQueue.push_function([&]() {
+    vkDestroyDescriptorSetLayout(_device, _singleImageDescriptorLayout, nullptr);
+  });
 
-		vkDestroyDescriptorSetLayout(_device, _drawImageDescriptorLayout, nullptr);
-		});
+  _mainDeletionQueue.push_function([&]() {
+    vkDestroyDescriptorSetLayout(_device, _gpuSceneDataDescriptorLayout, nullptr);
+  });
+
+  _mainDeletionQueue.push_function([&]() {
+    vkDestroyDescriptorSetLayout(_device, _drawImageDescriptorLayout, nullptr);
+  });
 
 }
 
@@ -366,78 +544,81 @@ void VulkanRendererBackend::init_descriptors(){
  * @brief Initializes pipes for rendering
  * @detail Currently initializes all pipelines used due to low overhead
  */
-void VulkanRendererBackend::init_pipelines(){
-//TODO: Configurable/runtime decision on what pipelines are compiled at source
+void VulkanRendererBackend::init_pipelines() {
+  // TODO: Configurable/runtime decision on what pipelines are compiled at
+  // source
   init_mesh_pipeline();
 }
 
-void VulkanRendererBackend::init_mesh_pipeline(){
-	VkShaderModule triangleFragShader;
-	if (!vkutil::load_shader_module("../../shaders/tex_image.frag.spv",
-		_device, &triangleFragShader)) {
+void VulkanRendererBackend::init_mesh_pipeline() {
+  VkShaderModule triangleFragShader;
+  if (!vkutil::load_shader_module("../../shaders/tex_image.frag.spv", _device,
+                                  &triangleFragShader)) {
     OE_LOG(VULKAN_BACKEND, INFO, "Error building default mesh fragment shader");
-	}
-	else {
-    OE_LOG(VULKAN_BACKEND, INFO, "Default mesh fragment shader successfully loaded");
-	}
+  } else {
+    OE_LOG(VULKAN_BACKEND, INFO,
+           "Default mesh fragment shader successfully loaded");
+  }
 
-	VkShaderModule triangleVertexShader;
-	if (!vkutil::load_shader_module("../../shaders/colored_triangle_mesh.vert.spv",
-		_device, &triangleVertexShader)) {
+  VkShaderModule triangleVertexShader;
+  if (!vkutil::load_shader_module(
+          "../../shaders/colored_triangle_mesh.vert.spv", _device,
+          &triangleVertexShader)) {
     OE_LOG(VULKAN_BACKEND, INFO, "Error building default mesh vertext shader");
-	}
-	else {
-    OE_LOG(VULKAN_BACKEND, INFO, "Default mesh vertex shader successfully loaded");
-	}
+  } else {
+    OE_LOG(VULKAN_BACKEND, INFO,
+           "Default mesh vertex shader successfully loaded");
+  }
 
-	VkPushConstantRange bufferRange{};
-	bufferRange.offset = 0;
-	bufferRange.size = sizeof(GPUDrawPushConstants);
-	bufferRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+  VkPushConstantRange bufferRange{};
+  bufferRange.offset = 0;
+  bufferRange.size = sizeof(GPUDrawPushConstants);
+  bufferRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-	VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
-	pipeline_layout_info.pPushConstantRanges = &bufferRange;
-	pipeline_layout_info.pushConstantRangeCount = 1;
-	pipeline_layout_info.pSetLayouts = &_singleImageDescriptorLayout;
-	pipeline_layout_info.setLayoutCount = 1;
-	VK_CHECK(vkCreatePipelineLayout(_device, &pipeline_layout_info, nullptr, &_meshPipelineLayout));
+  VkPipelineLayoutCreateInfo pipeline_layout_info =
+      vkinit::pipeline_layout_create_info();
+  pipeline_layout_info.pPushConstantRanges = &bufferRange;
+  pipeline_layout_info.pushConstantRangeCount = 1;
+  pipeline_layout_info.pSetLayouts = &_singleImageDescriptorLayout;
+  pipeline_layout_info.setLayoutCount = 1;
+  VK_CHECK(vkCreatePipelineLayout(_device, &pipeline_layout_info, nullptr,
+                                  &_meshPipelineLayout));
 
-	PipelineBuilder pipelineBuilder;
+  PipelineBuilder pipelineBuilder;
 
-	// use the triangle layout we created
-	pipelineBuilder._pipelineLayout = _meshPipelineLayout;
-	// connecting the vertex and pixel shaders to the pipeline
-	pipelineBuilder.set_shaders(triangleVertexShader, triangleFragShader);
-	// it will draw triangles
-	pipelineBuilder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-	// filled triangles
-	pipelineBuilder.set_polygon_mode(VK_POLYGON_MODE_FILL);
-	// no backface culling
-	pipelineBuilder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
-	// no multisampling
-	pipelineBuilder.set_multisampling_none();
-	//  blending
-	// pipelineBuilder.disable_blending();
-	pipelineBuilder.enable_blending_additive();
-	// pipelineBuilder.enable_blending_alphablend();
+  // use the triangle layout we created
+  pipelineBuilder._pipelineLayout = _meshPipelineLayout;
+  // connecting the vertex and pixel shaders to the pipeline
+  pipelineBuilder.set_shaders(triangleVertexShader, triangleFragShader);
+  // it will draw triangles
+  pipelineBuilder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+  // filled triangles
+  pipelineBuilder.set_polygon_mode(VK_POLYGON_MODE_FILL);
+  // no backface culling
+  pipelineBuilder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+  // no multisampling
+  pipelineBuilder.set_multisampling_none();
+  //  blending
+  // pipelineBuilder.disable_blending();
+  pipelineBuilder.enable_blending_additive();
+  // pipelineBuilder.enable_blending_alphablend();
 
-	// pipelineBuilder.disable_depthtest();
-	pipelineBuilder.enable_depthtest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
+  // pipelineBuilder.disable_depthtest();
+  pipelineBuilder.enable_depthtest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
-	// connect the image format we will draw into, from draw image
-	pipelineBuilder.set_color_attachment_format(_drawImage.imageFormat);
-	pipelineBuilder.set_depth_format(
-		_depthImage.imageFormat);  // finally build the pipeline
+  // connect the image format we will draw into, from draw image
+  pipelineBuilder.set_color_attachment_format(_drawImage.imageFormat);
+  pipelineBuilder.set_depth_format(
+      _depthImage.imageFormat); // finally build the pipeline
 
-	_meshPipeline = pipelineBuilder.build_pipeline(_device);
+  _meshPipeline = pipelineBuilder.build_pipeline(_device);
 
-	// clean structures
-	vkDestroyShaderModule(_device, triangleFragShader, nullptr);
-	vkDestroyShaderModule(_device, triangleVertexShader, nullptr);
+  // clean structures
+  vkDestroyShaderModule(_device, triangleFragShader, nullptr);
+  vkDestroyShaderModule(_device, triangleVertexShader, nullptr);
 
-	_mainDeletionQueue.push_function([&]() {
-		vkDestroyPipelineLayout(_device, _meshPipelineLayout, nullptr);
-		vkDestroyPipeline(_device, _meshPipeline, nullptr);
-		});
-
+  _mainDeletionQueue.push_function([&]() {
+    vkDestroyPipelineLayout(_device, _meshPipelineLayout, nullptr);
+    vkDestroyPipeline(_device, _meshPipeline, nullptr);
+  });
 }

@@ -1,14 +1,14 @@
-
 #include "simdjson.h"
+#include <SDL.h>
 
-#include "entry.hpp"
-#include "core/renderer.hpp"
 #include "core/engine_types.hpp"
+#include "core/renderer.hpp"
+#include "entry.hpp"
 #include "util/logger.hpp"
 
 using namespace simdjson;
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   DECLARE_LOG_CATEGORY(ORION);
   app_state state;
   // Load config
@@ -21,11 +21,37 @@ int main(int argc, char* argv[]) {
   // Init modules
   Renderer renderer;
   renderer.init(state);
-  // Run game
+  // Call game initialization
   init();
-  run();
+
+  // Main loop
+  bool bQuit = false;
+  SDL_Event e;
+  while (!bQuit) {
+    // Handle events on queue
+    while (SDL_PollEvent(&e) != 0) {
+      // close the window when user alt-f4s or clicks the X button
+      if (e.type == SDL_QUIT)
+        bQuit = true;
+
+      // Handle keypress
+      if (e.type == SDL_KEYDOWN) {
+        // Another way to quit
+        if (e.key.keysym.sym == SDLK_ESCAPE) {
+          OE_LOG(ORION, INFO, "Quitting...");
+          bQuit = true;
+        }
+      }
+      // MAIN GAME LOOP
+      // TODO: Proper tick loop -> should be endless loop until quit signal
+      // recevied
+    }
+    renderer.run(); // Start renderer running
+  }
+
   // Cleanup process
   // TODO: Expose a 'quit game' api
+  OE_LOG(ORION, INFO, "Calling renderer shutdown");
   renderer.shutdown();
   return 0;
 }

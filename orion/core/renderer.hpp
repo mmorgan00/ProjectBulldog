@@ -7,6 +7,7 @@ public:
 
 void init(app_state& state);
 void shutdown();
+void run();
 private:
 
   RendererBackend* backend;

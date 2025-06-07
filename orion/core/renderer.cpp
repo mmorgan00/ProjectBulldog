@@ -18,6 +18,10 @@ void Renderer::init(app_state& state) {
   }
 }
 
+void Renderer::run(){
+// TODO: Platform driven resize
+  backend->run();
+}
 
 void Renderer::shutdown(){
   backend->shutdown();

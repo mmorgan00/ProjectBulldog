@@ -32,6 +32,8 @@ public:
   bool init(app_state& state) override;
   void shutdown() override;
 
+  int _frameNumber{0};
+  DeletionQueue _mainDeletionQueue;
 
 private:
   // Initializes Vulkan instance, devices, and queues
@@ -50,10 +52,12 @@ private:
   //TODO: Hardcoding each pipeline create function will not scale
   void init_mesh_pipeline();
 
+  void run() override;
+
 
   void create_swapchain(uint32_t width, uint32_t height);
+  void destroy_swapchain();
 
-  DeletionQueue _mainDeletionQueue;
   DescriptorAllocatorGrowable globalDescriptorAllocator;
 
   // Window resources
@@ -107,6 +111,13 @@ private:
                                               
   // Window
   struct SDL_Window* _window{nullptr};
+
+  FrameData& get_current_frame() {
+    return _frames[_frameNumber % FRAME_OVERLAP];
+  };
+
+
+
 };
 
 
