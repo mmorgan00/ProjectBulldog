@@ -9,7 +9,11 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
-
+enum class MaterialPass :uint8_t {
+  MainColor,
+  Transparent,
+  Other
+};
 
 struct AllocatedImage {
   VkImage image;
@@ -22,6 +26,31 @@ struct AllocatedImage {
 struct GPUDrawPushConstants {
   glm::mat4 worldMatrix;
   VkDeviceAddress vertexBuffer;
+};
+struct AllocatedBuffer {
+  VkBuffer buffer;
+  VmaAllocation allocation;
+  VmaAllocationInfo info;
+};
+
+struct GPUSceneData {
+  glm::mat4 view;
+  glm::mat4 proj;
+  glm::mat4 viewproj;
+  glm::vec4 ambientColor;
+  glm::vec4 sunlightDirection;  // w for sun power
+  glm::vec4 sunlightColor;
+};
+
+struct MaterialPipeline {
+  VkPipeline pipeline;
+  VkPipelineLayout layout;
+};
+
+struct MaterialInstance {
+  MaterialPipeline* pipeline;
+  VkDescriptorSet materialSet;
+  MaterialPass passType;
 };
 
 
