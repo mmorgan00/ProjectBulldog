@@ -520,26 +520,31 @@ void VulkanRendererBackend::destroy_swapchain() {
 }
 
 void VulkanRendererBackend::shutdown() {
+  DECLARE_LOG_CATEGORY(VULKAN_SHUTDOWN); // Dedicated category for cleanup
   vkDeviceWaitIdle(_device);
-
   OE_LOG(VULKAN_BACKEND, INFO, "Shutting down vulkan renderer");
+  OE_LOG(VULKAN_SHUTDOWN, INFO, "Clearing metalRoughMaterial resources")
+  metalRoughMaterial.clear_resources(_device);
 
+  OE_LOG(VULKAN_SHUTDOWN, INFO, "Destroying sync strucutures");
   for (int i = 0; i < FRAME_OVERLAP; i++) {
     vkDestroyCommandPool(_device, _frames[i]._commandPool, nullptr);
-
     // destroy sync objects
     vkDestroyFence(_device, _frames[i]._renderFence, nullptr);
     vkDestroySemaphore(_device, _frames[i]._renderSemaphore, nullptr);
     vkDestroySemaphore(_device, _frames[i]._swapchainSemaphore, nullptr);
-
+    // Should handle anything elese
     _frames[i]._deletionQueue.flush();
   }
-  globalDescriptorAllocator.clear_pools(_device);
+  OE_LOG(VULKAN_SHUTDOWN, INFO, "Destroying global allocator");
+  globalDescriptorAllocator.destroy_pools(_device);
+  OE_LOG(VULKAN_SHUTDOWN, INFO, "Flushing deletion queue");
   _mainDeletionQueue.flush();
+  OE_LOG(VULKAN_SHUTDOWN, INFO, "Destroying swapchain");
   destroy_swapchain();
-
+  OE_LOG(VULKAN_SHUTDOWN, INFO, "Destroying surface")
   vkDestroySurfaceKHR(_instance, _surface, nullptr);
-
+  OE_LOG(VULKAN_SHUTDOWN, INFO, "Destroying device")
   vkDestroyDevice(_device, nullptr);
   vkb::destroy_debug_utils_messenger(_instance, _debug_messenger);
   vkDestroyInstance(_instance, nullptr);
@@ -576,7 +581,9 @@ void VulkanRendererBackend::init_sync_structures() {
 void VulkanRendererBackend::init_descriptors() {
   // create a descriptor pool that will hold 10 sets with 1 image each
   std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {
-      {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}};
+      {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1},
+      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
+      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1}};
 
   globalDescriptorAllocator.init(_device, 10, sizes);
 
@@ -959,15 +966,13 @@ void VulkanRendererBackend::immediate_submit(
   VK_CHECK(vkWaitForFences(_device, 1, &_immFence, true, 9999999999));
 }
 
-
 /**
  * @brief Destroys provided image and associated image view
  * @param img AllocatedImage to be destroyed
  */
-void VulkanRendererBackend::destroy_image(const AllocatedImage& img)
-{
-	vkDestroyImageView(_device, img.imageView, nullptr);
-	vmaDestroyImage(_allocator, img.image, img.allocation);
+void VulkanRendererBackend::destroy_image(const AllocatedImage &img) {
+  vkDestroyImageView(_device, img.imageView, nullptr);
+  vmaDestroyImage(_allocator, img.image, img.allocation);
 }
 
 /**
@@ -1036,7 +1041,6 @@ void GLTFMetallic_Roughness::build_pipelines(VulkanRendererBackend *engine) {
   materialLayout =
       layoutBuilder.build(engine->_device, VK_SHADER_STAGE_VERTEX_BIT |
                                                VK_SHADER_STAGE_FRAGMENT_BIT);
-
   VkDescriptorSetLayout layouts[] = {engine->_gpuSceneDataDescriptorLayout,
                                      materialLayout};
 
@@ -1085,4 +1089,12 @@ void GLTFMetallic_Roughness::build_pipelines(VulkanRendererBackend *engine) {
 
   vkDestroyShaderModule(engine->_device, meshFragShader, nullptr);
   vkDestroyShaderModule(engine->_device, meshVertexShader, nullptr);
+}
+
+void GLTFMetallic_Roughness::clear_resources(VkDevice device) {
+  // They share a layout, only delete one layout
+  vkDestroyPipelineLayout(device, opaquePipeline.layout, nullptr);
+  vkDestroyPipeline(device, opaquePipeline.pipeline, nullptr);
+  vkDestroyPipeline(device, transparentPipeline.pipeline, nullptr);
+  vkDestroyDescriptorSetLayout(device, materialLayout, nullptr);
 }

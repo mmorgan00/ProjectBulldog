@@ -1,7 +1,9 @@
 
 #include "vulkan_descriptors.hpp"
+#include "util/logger.hpp"
 
 
+  DECLARE_LOG_CATEGORY(VULKAN_DESCRIPTOR_POOL);
 void DescriptorLayoutBuilder::add_binding(uint32_t binding,
                                           VkDescriptorType type) {
   VkDescriptorSetLayoutBinding newbind{};
@@ -123,12 +125,14 @@ void DescriptorAllocatorGrowable::clear_pools(VkDevice device) {
 
 void DescriptorAllocatorGrowable::destroy_pools(VkDevice device) {
   for (auto p : readyPools) {
+    OE_LOG(VULKAN_DESCRIPTOR_POOL, INFO, "Clearing ready pool");
+    vkDestroyDescriptorPool(device, p, nullptr);
+  }
+  for (auto p : fullPools) {
+    OE_LOG(VULKAN_DESCRIPTOR_POOL, INFO, "Clearing full pool");
     vkDestroyDescriptorPool(device, p, nullptr);
   }
   readyPools.clear();
-  for (auto p : fullPools) {
-    vkDestroyDescriptorPool(device, p, nullptr);
-  }
   fullPools.clear();
 }
 //< growpool_2
@@ -142,7 +146,6 @@ VkDescriptorPool DescriptorAllocatorGrowable::get_pool(VkDevice device) {
   } else {
     // need to create a new pool
     newPool = create_pool(device, setsPerPool, ratios);
-
     setsPerPool = setsPerPool * 1.5;
     if (setsPerPool > 4092) {
       setsPerPool = 4092;
@@ -169,6 +172,7 @@ VkDescriptorPool DescriptorAllocatorGrowable::create_pool(
   pool_info.pPoolSizes = poolSizes.data();
 
   VkDescriptorPool newPool;
+  OE_LOG(VULKAN_DESCRIPTOR_POOL, INFO, "Creating pool");
   vkCreateDescriptorPool(device, &pool_info, nullptr, &newPool);
   return newPool;
 }
@@ -197,7 +201,6 @@ VkDescriptorSet DescriptorAllocatorGrowable::allocate(
 
     poolToUse = get_pool(device);
     allocInfo.descriptorPool = poolToUse;
-
     VK_CHECK(vkAllocateDescriptorSets(device, &allocInfo, &ds));
   }
 
