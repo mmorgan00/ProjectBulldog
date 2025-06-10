@@ -1,5 +1,5 @@
-#pragma once
-
+#ifndef ORION_CORE_ENGINE_TYPES_H_
+#define ORION_CORE_ENGINE_TYPES_H_
 #include "simdjson.h"
 #include <string>
 
@@ -26,5 +26,4 @@ typedef struct app_state {
   }
 } app_state;
 
-
-
+#endif

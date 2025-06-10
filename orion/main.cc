@@ -1,10 +1,10 @@
 #include "simdjson.h"
 #include <SDL.h>
 
-#include "core/engine_types.hpp"
-#include "core/renderer.hpp"
-#include "entry.hpp"
-#include "util/logger.hpp"
+#include "core/engine_types.h"
+#include "core/renderer.h"
+#include "entry.h"
+#include "util/logger.h"
 
 using namespace simdjson;
 
@@ -46,12 +46,12 @@ int main(int argc, char *argv[]) {
       // TODO: Proper tick loop -> should be endless loop until quit signal
       // recevied
     }
-    renderer.run(); // Start renderer running
+    renderer.draw();
   }
 
   // Cleanup process
   // TODO: Expose a 'quit game' api
-  OE_LOG(ORION, INFO, "Calling renderer shutdown");
-  renderer.shutdown();
+  OE_LOG(ORION, INFO, "Calling renderer cleanup");
+  renderer.cleanup();
   return 0;
 }

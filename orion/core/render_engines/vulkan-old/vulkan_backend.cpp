@@ -2,6 +2,7 @@
 
 #include "VkBootstrap.h"
 #include "core/engine_types.hpp"
+#include "core/renderer_backends/vulkan/vulkan_initializers.hpp"
 #include "util/logger.hpp"
 #include "vulkan_images.hpp"
 #include "vulkan_pipelines.hpp"
@@ -16,34 +17,34 @@
 DECLARE_LOG_CATEGORY(VULKAN_BACKEND)
 void VulkanRendererBackend::run() {
 
-  VK_CHECK(vkWaitForFences(_device, 1, &get_current_frame()._renderFence, true,
-                           1000000000));
+  FrameData frame = get_current_frame();
+  VK_CHECK(vkWaitForFences(_device, 1, &frame._renderFence, true, 1000000000));
 
-  //< pt 1 Reset from previous frame and capture window size
-  get_current_frame()._deletionQueue.flush();
-  get_current_frame()._frameDescriptors.clear_pools(_device);
-  _drawExtent.height =
-      std::min(_swapchainExtent.height, _drawImage.imageExtent.height) *
-      renderScale;
-  _drawExtent.width =
-      std::min(_swapchainExtent.width, _drawImage.imageExtent.width) *
-      renderScale;
+  // //< pt 1 Reset from previous frame and capture window size
+  // frame._deletionQueue.flush();
+  // frame._frameDescriptors.clear_pools(_device);
+  // _drawExtent.height =
+  //     std::min(_swapchainExtent.height, _drawImage.imageExtent.height) *
+  //     renderScale;
+  // _drawExtent.width =
+  //     std::min(_swapchainExtent.width, _drawImage.imageExtent.width) *
+  //     renderScale;
 
-  VK_CHECK(vkResetFences(_device, 1, &get_current_frame()._renderFence));
+  VK_CHECK(vkResetFences(_device, 1, &frame._renderFence));
   //< pt 1
 
   //> pt 2 request image from the swapchain
   uint32_t swapchainImageIndex;
   VkResult e = vkAcquireNextImageKHR(_device, _swapchain, 1000000000,
-                                     get_current_frame()._swapchainSemaphore,
-                                     nullptr, &swapchainImageIndex);
-  // if (e == VK_ERROR_OUT_OF_DATE_KHR) {
-  // resize_requested = true;
-  // return;
-  // } //< pt 2
+                                     frame._swapchainSemaphore, nullptr,
+                                     &swapchainImageIndex);
+  if (e == VK_ERROR_OUT_OF_DATE_KHR) {
+    resize_requested = true;
+    return;
+  } //< pt 2
 
   //> pt 3 prepare command buffer
-  VkCommandBuffer cmd = get_current_frame()._mainCommandBuffer;
+  VkCommandBuffer cmd = frame._mainCommandBuffer;
 
   // now that we are sure that the commands finished executing, we can safely
   // reset the command buffer to begin recording again.
@@ -63,49 +64,26 @@ void VulkanRendererBackend::run() {
   vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_UNDEFINED,
                            VK_IMAGE_LAYOUT_GENERAL);
 
-  // draw_background(cmd);
+  // Much render, many wow.
+  // TODO: Redo entirely, this is just to give us a proper render pass
+  VkClearColorValue clearValue;
+  float flash = std::abs(std::sin(_frameNumber / 120.f));
+  clearValue = {{0.0f, 0.0f, flash, 1.0f}};
+  VkImageSubresourceRange clearRange =
+      vkinit::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT);
 
-  vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL,
-                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-  vkutil::transition_image(cmd, _depthImage.image, VK_IMAGE_LAYOUT_UNDEFINED,
-                           VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-  draw_geometry(cmd);
+  // clear image
+  vkCmdClearColorImage(cmd, _swapchainImages[swapchainImageIndex],
+                       VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
 
-  // transtion the draw image and the swapchain image into their correct
-  // transfer layouts
-  vkutil::transition_image(cmd, _drawImage.image,
-                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                           VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+  // make the swapchain image into presentable mode
   vkutil::transition_image(cmd, _swapchainImages[swapchainImageIndex],
-                           VK_IMAGE_LAYOUT_UNDEFINED,
-                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-  // transfer layouts
-  vkutil::transition_image(cmd, _swapchainImages[swapchainImageIndex],
-                           VK_IMAGE_LAYOUT_UNDEFINED,
-                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-  // execute a copy from the draw image into the swapchain
-  vkutil::copy_image_to_image(cmd, _drawImage.image,
-                              _swapchainImages[swapchainImageIndex],
-                              _drawExtent, _swapchainExtent);
-
-  // set swapchain image layout to Attachment Optimal so we can draw it
-  vkutil::transition_image(cmd, _swapchainImages[swapchainImageIndex],
-                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-  // draw imgui into the swapchain image
-  // draw_imgui(cmd, _swapchainImageViews[swapchainImageIndex]);
-
-  // set swapchain image layout to Present so we can draw it
-  vkutil::transition_image(cmd, _swapchainImages[swapchainImageIndex],
-                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                           VK_IMAGE_LAYOUT_GENERAL,
                            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
   // finalize the command buffer (we can no longer add commands, but it can now
   // be executed)
-  VK_CHECK(vkEndCommandBuffer(cmd)); //> end record command buffer
+  VK_CHECK(vkEndCommandBuffer(cmd));
 
   //> draw_5
   // prepare the submission to the queue.
@@ -117,17 +95,15 @@ void VulkanRendererBackend::run() {
 
   VkSemaphoreSubmitInfo waitInfo = vkinit::semaphore_submit_info(
       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR,
-      get_current_frame()._swapchainSemaphore);
-  VkSemaphoreSubmitInfo signalInfo =
-      vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
-                                    get_current_frame()._renderSemaphore);
+      frame._swapchainSemaphore);
+  VkSemaphoreSubmitInfo signalInfo = vkinit::semaphore_submit_info(
+      VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, frame._renderSemaphore);
 
   VkSubmitInfo2 submit = vkinit::submit_info(&cmdinfo, &signalInfo, &waitInfo);
 
   // submit command buffer to the queue and execute it.
   //  _renderFence will now block until the graphic commands finish execution
-  VK_CHECK(vkQueueSubmit2(_graphicsQueue, 1, &submit,
-                          get_current_frame()._renderFence));
+  VK_CHECK(vkQueueSubmit2(_graphicsQueue, 1, &submit, frame._renderFence));
   //< draw_5
   //
   //> draw_6
@@ -142,15 +118,15 @@ void VulkanRendererBackend::run() {
   presentInfo.pSwapchains = &_swapchain;
   presentInfo.swapchainCount = 1;
 
-  presentInfo.pWaitSemaphores = &get_current_frame()._renderSemaphore;
+  presentInfo.pWaitSemaphores = &frame._renderSemaphore;
   presentInfo.waitSemaphoreCount = 1;
 
   presentInfo.pImageIndices = &swapchainImageIndex;
 
   VkResult presentResult = vkQueuePresentKHR(_graphicsQueue, &presentInfo);
-  // if (presentResult == VK_ERROR_OUT_OF_DATE_KHR) {
-  //   resize_requested = true;
-  // }
+  if (presentResult == VK_ERROR_OUT_OF_DATE_KHR) {
+    resize_requested = true;
+  }
   // increase the number of frames drawn
   _frameNumber++;
 
@@ -159,29 +135,29 @@ void VulkanRendererBackend::run() {
 
 void VulkanRendererBackend::draw_geometry(VkCommandBuffer cmd) {
   // allocate a new uniform buffer for the scene data
-  // AllocatedBuffer gpuSceneDataBuffer =
-  // 	create_buffer(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-  // 		VMA_MEMORY_USAGE_CPU_TO_GPU);
+  AllocatedBuffer gpuSceneDataBuffer =
+      create_buffer(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                    VMA_MEMORY_USAGE_CPU_TO_GPU);
 
   // add it to the deletion queue of this frame so it gets deleted once its been
   // used
-  // get_current_frame()._deletionQueue.push_function(
-  // [=, this]() { destroy_buffer(gpuSceneDataBuffer); });
+  get_current_frame()._deletionQueue.push_function(
+      [=, this]() { destroy_buffer(gpuSceneDataBuffer); });
 
   // write the buffer
-  // GPUSceneData* sceneUniformData =
-  // 	(GPUSceneData*)gpuSceneDataBuffer.allocation->GetMappedData();
-  // *sceneUniformData = sceneData;
+  GPUSceneData *sceneUniformData =
+      (GPUSceneData *)gpuSceneDataBuffer.allocation->GetMappedData();
+  *sceneUniformData = sceneData;
 
   // create a descriptor set that binds that buffer and update it
-  // VkDescriptorSet globalDescriptor =
-  // 	get_current_frame()._frameDescriptors.allocate(
-  // 		_device, _gpuSceneDataDescriptorLayout);
+  VkDescriptorSet globalDescriptor =
+      get_current_frame()._frameDescriptors.allocate(
+          _device, _gpuSceneDataDescriptorLayout);
 
-  // DescriptorWriter writer;
-  // writer.write_buffer(0, gpuSceneDataBuffer.buffer, sizeof(GPUSceneData), 0,
-  // 	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-  // writer.update_set(_device, globalDescriptor);
+  DescriptorWriter writer;
+  writer.write_buffer(0, gpuSceneDataBuffer.buffer, sizeof(GPUSceneData), 0,
+                      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+  writer.update_set(_device, globalDescriptor);
 
   // begin a render pass  connected to our draw image
   VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(
@@ -195,6 +171,29 @@ void VulkanRendererBackend::draw_geometry(VkCommandBuffer cmd) {
 
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _meshPipeline);
 
+  // TRIANGLE
+  // Set viewport and scissor
+  VkViewport viewport = {};
+  viewport.x = 0.0f;
+  viewport.y = 0.0f;
+  viewport.width = (float)_windowExtent.width;
+  viewport.height = (float)_windowExtent.height;
+  viewport.minDepth = 0.0f;
+  viewport.maxDepth = 1.0f;
+  vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+  VkRect2D scissor = {};
+  scissor.offset = {0, 0};
+  scissor.extent = _windowExtent;
+  vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+  // Bind descriptor set
+  // vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+  //                         _meshPipelineLayout, 0, 1, &globalDescriptor, 0,
+  //                         nullptr);
+
+  // Bind vertex buffer
+  // Draw the triangle
   // bind a texture
   //  VkDescriptorSet imageSet =
   //  get_current_frame()._frameDescriptors.allocate(_device,
@@ -227,38 +226,35 @@ void VulkanRendererBackend::draw_geometry(VkCommandBuffer cmd) {
   // testMeshes[2]->meshBuffers.vertexBufferAddress;
 
   // draw lambda for each object.
-  /** FROM OLD ENGINE
-                vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-  draw.material->pipeline->pipeline); vkCmdBindDescriptorSets(cmd,
-  VK_PIPELINE_BIND_POINT_GRAPHICS, draw.material->pipeline->layout, 0, 1,
-  &globalDescriptor, 0, nullptr); vkCmdBindDescriptorSets(cmd,
-  VK_PIPELINE_BIND_POINT_GRAPHICS, draw.material->pipeline->layout, 1, 1,
-  &draw.material->materialSet, 0, nullptr);
+  // FROM OLD ENGINE
+  // vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+  //                   draw.material->pipeline->pipeline);
+  // vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+  //                         draw.material->pipeline->layout, 0, 1,
+  //                         &globalDescriptor, 0, nullptr);
+  // vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+  //                         draw.material->pipeline->layout, 1, 1,
+  //                         &draw.material->materialSet, 0, nullptr);
 
-                vkCmdBindIndexBuffer(cmd, draw.indexBuffer, 0,
-  VK_INDEX_TYPE_UINT32);
+  // vkCmdBindIndexBuffer(cmd, draw.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-                GPUDrawPushConstants pushConstants;
-                pushConstants.vertexBuffer = draw.vertexBufferAddress;
-                pushConstants.worldMatrix = draw.transform;
-                vkCmdPushConstants(cmd, draw.material->pipeline->layout,
-  VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &pushConstants);
+  // GPUDrawPushConstants pushConstants;
+  // pushConstants.vertexBuffer = draw.vertexBufferAddress;
+  // pushConstants.worldMatrix = draw.transform;
+  // vkCmdPushConstants(cmd, draw.material->pipeline->layout,
+  //                    VK_SHADER_STAGE_VERTEX_BIT, 0,
+  //                    sizeof(GPUDrawPushConstants), &pushConstants);
 
-                vkCmdDrawIndexed(cmd, draw.indexCount, 1, draw.firstIndex, 0,
-  0);
-                };
+  // vkCmdDrawIndexed(cmd, draw.indexCount, 1, draw.firstIndex, 0, 0);
 
-        for (auto& r : mainDrawContext.OpaqueSurfaces) {
-                draw(r);
-        }
+  // for (auto &r : mainDrawContext.OpaqueSurfaces) {
+  //   draw(r);
+  // }
 
-        for (auto& r : mainDrawContext.TransparentSurfaces) {
-                draw(r);
-        }
-        // we delete the draw commands now that we processed them
-        mainDrawContext.OpaqueSurfaces.clear();
-        mainDrawContext.TransparentSurfaces.clear();
-  **/
+  // for (auto &r : mainDrawContext.TransparentSurfaces) {
+  //   draw(r);
+  // }
+  // mainDrawContext.TransparentSurfaces.clear();
   vkCmdEndRendering(cmd);
 }
 
@@ -271,8 +267,7 @@ bool VulkanRendererBackend::init(app_state &state) {
   init_pipelines();
   // TODO:
   // init_imgui();
-  OE_LOG(VULKAN_BACKEND, INFO, "Initializing defaullt data");
-  init_default_data();
+  // init_default_data();
 
   //
   return true;
@@ -494,6 +489,7 @@ void VulkanRendererBackend::init_commands() {
     VK_CHECK(vkAllocateCommandBuffers(_device, &cmdAllocInfo,
                                       &_frames[i]._mainCommandBuffer));
   }
+  /**
   VK_CHECK(vkCreateCommandPool(_device, &commandPoolInfo, nullptr,
                                &_immCommandPool));
 
@@ -503,7 +499,7 @@ void VulkanRendererBackend::init_commands() {
 
   VK_CHECK(
       vkAllocateCommandBuffers(_device, &cmdAllocInfo, &_immCommandBuffer));
-
+**/
   OE_LOG(VULKAN_BACKEND, INFO, "Command buffers allocated");
 
   _mainDeletionQueue.push_function(
@@ -524,7 +520,7 @@ void VulkanRendererBackend::shutdown() {
   vkDeviceWaitIdle(_device);
   OE_LOG(VULKAN_BACKEND, INFO, "Shutting down vulkan renderer");
   OE_LOG(VULKAN_SHUTDOWN, INFO, "Clearing metalRoughMaterial resources")
-  metalRoughMaterial.clear_resources(_device);
+  // metalRoughMaterial.clear_resources(_device);
 
   OE_LOG(VULKAN_SHUTDOWN, INFO, "Destroying sync strucutures");
   for (int i = 0; i < FRAME_OVERLAP; i++) {
@@ -663,14 +659,76 @@ void VulkanRendererBackend::init_descriptors() {
 void VulkanRendererBackend::init_pipelines() {
   // TODO: Configurable/runtime decision on what pipelines are compiled at
   // source
+  init_default_pipeline();
   init_mesh_pipeline();
-  metalRoughMaterial.build_pipelines(this);
+  // metalRoughMaterial.build_pipelines(this);
+}
+
+// This will be the fallback pipeline for any data not specifying otherwise.
+void VulkanRendererBackend::init_default_pipeline() {
+  OE_LOG(VULKAN_BACKEND, INFO, "Initializing default pipeline");
+  // Load shader modules
+  VkShaderModule triangleFragShader;
+  if (!vkutil::load_shader_module("../../shaders/colored_triangle.frag.spv",
+                                  _device, &triangleFragShader)) {
+    OE_LOG(VULKAN_BACKEND, INFO, "Error building default mesh fragment shader");
+  } else {
+    OE_LOG(VULKAN_BACKEND, INFO,
+           "Default mesh fragment shader successfully loaded");
+  }
+
+  VkShaderModule triangleVertexShader;
+  if (!vkutil::load_shader_module("../../shaders/colored_triangle.vert.spv",
+                                  _device, &triangleVertexShader)) {
+    OE_LOG(VULKAN_BACKEND, INFO, "Error building default mesh vertext shader");
+  } else {
+    OE_LOG(VULKAN_BACKEND, INFO,
+           "Default mesh vertex shader successfully loaded");
+  }
+
+  VkPipelineLayoutCreateInfo default_ci = vkinit::pipeline_layout_create_info();
+  default_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+  default_ci.pSetLayouts = 0;    //&_singleImageDescriptorLayout;
+  default_ci.setLayoutCount = 0; // 1;
+
+  VK_CHECK(
+      vkCreatePipelineLayout(_device, &default_ci, nullptr, &defaultLayout));
+
+  PipelineBuilder pipelineBuilder;
+  // use the triangle layout we created
+  pipelineBuilder._pipelineLayout = defaultLayout;
+  // connecting the vertex and pixel shaders to the pipeline
+  pipelineBuilder.set_shaders(triangleVertexShader, triangleFragShader);
+  // it will draw triangles
+  pipelineBuilder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+  // filled triangles
+  pipelineBuilder.set_polygon_mode(VK_POLYGON_MODE_FILL);
+  // no backface culling
+  pipelineBuilder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+  // no multisampling
+  pipelineBuilder.set_multisampling_none();
+  //  blending
+  pipelineBuilder.enable_blending_additive();
+  pipelineBuilder.enable_depthtest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
+
+  // connect the image format we will draw into, from draw image
+  pipelineBuilder.set_color_attachment_format(_drawImage.imageFormat);
+  _defaultPipeline = pipelineBuilder.build_pipeline(_device);
+
+  // clean structures
+  vkDestroyShaderModule(_device, triangleFragShader, nullptr);
+  vkDestroyShaderModule(_device, triangleVertexShader, nullptr);
+
+  _mainDeletionQueue.push_function([&]() {
+    vkDestroyPipelineLayout(_device, defaultLayout, nullptr);
+    vkDestroyPipeline(_device, _defaultPipeline, nullptr);
+  });
 }
 
 void VulkanRendererBackend::init_mesh_pipeline() {
   VkShaderModule triangleFragShader;
-  if (!vkutil::load_shader_module("../../shaders/tex_image.frag.spv", _device,
-                                  &triangleFragShader)) {
+  if (!vkutil::load_shader_module("../../shaders/colored_triangle.frag.spv",
+                                  _device, &triangleFragShader)) {
     OE_LOG(VULKAN_BACKEND, INFO, "Error building default mesh fragment shader");
   } else {
     OE_LOG(VULKAN_BACKEND, INFO,
@@ -995,9 +1053,7 @@ MaterialInstance GLTFMetallic_Roughness::write_material(
     matData.pipeline = &opaquePipeline;
   }
 
-  OE_LOG(VULKAN_BACKEND, INFO, "Just before the allocate call");
   matData.materialSet = descriptorAllocator.allocate(device, materialLayout);
-  OE_LOG(VULKAN_BACKEND, INFO, "Just after the allocate call");
   writer.clear();
   writer.write_buffer(0, resources.dataBuffer, sizeof(MaterialConstants),
                       resources.dataBufferOffset,

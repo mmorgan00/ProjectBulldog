@@ -27,37 +27,37 @@ struct FrameData {
 };
 
 struct GLTFMetallic_Roughness {
-	MaterialPipeline opaquePipeline;
-	MaterialPipeline transparentPipeline;
+  MaterialPipeline opaquePipeline;
+  MaterialPipeline transparentPipeline;
 
-	VkDescriptorSetLayout materialLayout;
+  VkDescriptorSetLayout materialLayout;
 
-	struct MaterialConstants {
-		glm::vec4 colorFactors;
-		glm::vec4 metal_rough_factors;
-		//padding, we need it anyway for uniform buffers
-		glm::vec4 extra[14];
-	};
+  struct MaterialConstants {
+    glm::vec4 colorFactors;
+    glm::vec4 metal_rough_factors;
+    // padding, we need it anyway for uniform buffers
+    glm::vec4 extra[14];
+  };
 
-	struct MaterialResources {
-		AllocatedImage colorImage;
-		VkSampler colorSampler;
-		AllocatedImage metalRoughImage;
-		VkSampler metalRoughSampler;
-		VkBuffer dataBuffer;
-		uint32_t dataBufferOffset;
-	};
+  struct MaterialResources {
+    AllocatedImage colorImage;
+    VkSampler colorSampler;
+    AllocatedImage metalRoughImage;
+    VkSampler metalRoughSampler;
+    VkBuffer dataBuffer;
+    uint32_t dataBufferOffset;
+  };
 
-	DescriptorWriter writer;
+  DescriptorWriter writer;
 
-	void build_pipelines(VulkanRendererBackend* engine);
-	void clear_resources(VkDevice device);
+  void build_pipelines(VulkanRendererBackend *engine);
+  void clear_resources(VkDevice device);
 
-	MaterialInstance write_material(VkDevice device, MaterialPass pass, const MaterialResources& resources, DescriptorAllocatorGrowable& descriptorAllocator);
+  MaterialInstance
+  write_material(VkDevice device, MaterialPass pass,
+                 const MaterialResources &resources,
+                 DescriptorAllocatorGrowable &descriptorAllocator);
 };
-
-
-
 
 class VulkanRendererBackend : public RendererBackend {
 public:
@@ -68,7 +68,7 @@ public:
   DeletionQueue _mainDeletionQueue;
   GPUSceneData sceneData;
 
-  VkDevice _device;                          // Vulkan device for commands
+  VkDevice _device; // Vulkan device for commands
   // Public so that Material builders can access/write
   VkDescriptorSetLayout _gpuSceneDataDescriptorLayout;
   VkDescriptorSetLayout _singleImageDescriptorLayout;
@@ -78,7 +78,7 @@ public:
   VkExtent2D _drawExtent;
   float renderScale = 1.f;
 
-
+  bool resize_requested = false;
 
 private:
   // Initializes Vulkan instance, devices, and queues
@@ -95,6 +95,8 @@ private:
   void init_pipelines();
   // Pipeline create functions
   // TODO: Hardcoding each pipeline create function will not scale
+
+  void init_default_pipeline();
   void init_mesh_pipeline();
 
   void init_default_data();
@@ -104,7 +106,6 @@ private:
 
   void create_swapchain(uint32_t width, uint32_t height);
   void destroy_swapchain();
-
 
   //> Default data
   AllocatedImage _whiteImage;
@@ -116,7 +117,6 @@ private:
   MaterialInstance defaultData;
   GLTFMetallic_Roughness metalRoughMaterial;
   //< Default data
-
 
   void immediate_submit(std::function<void(VkCommandBuffer cmd)> &&function);
 
@@ -170,6 +170,8 @@ private:
   //< mesh pipeline
   VkPipelineLayout _meshPipelineLayout;
   VkPipeline _meshPipeline;
+  VkPipeline _defaultPipeline;
+  VkPipelineLayout defaultLayout;
   //> mesh pipeline
   // Window
   struct SDL_Window *_window{nullptr};

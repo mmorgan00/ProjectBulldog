@@ -18,9 +18,9 @@
 #include <glm/gtx/transform.hpp>
 #include <thread>
 
-// #define VMA_IMPLEMENTATION
+#define VMA_IMPLEMENTATION
 #include "VkBootstrap.h"
-// #include "vk_mem_alloc.h"
+#include "vk_mem_alloc.h"
 
 using json = nlohmann::json;
 
@@ -32,8 +32,8 @@ constexpr bool bUseValidationLayers = false;
 void VulkanEngine::init() {
   // We initialize SDL and create a window with it.
 
-  std::ifstream configFile("..\\..\\config\\init.json");
-  json config = json::parse(configFile);
+  // std::ifstream configFile("..\\..\\config\\init.json");
+  // json config = json::parse(configFile);
 
   SDL_Init(SDL_INIT_VIDEO);
   SDL_SetRelativeMouseMode(SDL_TRUE);
@@ -42,7 +42,7 @@ void VulkanEngine::init() {
       (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
 
   _window =
-      SDL_CreateWindow(config["appName"].get<std::string>().c_str(),
+      SDL_CreateWindow("Bulldog",
                        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                        _windowExtent.width, _windowExtent.height, window_flags);
 
@@ -64,8 +64,8 @@ void VulkanEngine::init() {
 
   // TODO: Rename from 'structure path' to something better conveying the
   // 'initial level' idea
-  std::string structurePath = {"..\\..\\assets\\" +
-                               config["sceneName"].get<std::string>() + ".glb"};
+  std::string structurePath = "gym.glb";
+                               
   auto structureFile = loadGltf(this, structurePath);
 
   assert(structureFile.has_value());
