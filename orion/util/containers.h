@@ -1,7 +1,10 @@
-#pragma once
+// Copyright 2025 Max Morgan
+
+#ifndef ORION_UTIL_CONTAINERS_H_
+#define ORION_UTIL_CONTAINERS_H_
+
 #include <deque>
 #include <functional>
-
 
 struct DeletionQueue {
   std::deque<std::function<void()>> deletors;
@@ -20,4 +23,4 @@ struct DeletionQueue {
   }
 };
 
-
+#endif  // ORION_UTIL_CONTAINERS_H_

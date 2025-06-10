@@ -1,11 +1,13 @@
+// Copyright 2025 Max Morgan
+
 #ifndef ORION_CORE_RENDER_ENGINE_H_
 #define ORION_CORE_RENDER_ENGINE_H_
 
 ORION_CORE_RENDER_ENGINE_H_
-#include <core/engine_types.h>
+#include <orion/core/engine_types.h>
 
-class RenderEngine{
-  public:
+class RenderEngine {
+ public:
   /**
    * @brief Initialize rendering resources, including render pipelines
    */
@@ -15,4 +17,4 @@ class RenderEngine{
   virtual void cleanup() = 0;
 };
 
-#endif // !CORE_RENDER_ENGINE_H_
+#endif  // ORION_CORE_RENDER_ENGINE_H_

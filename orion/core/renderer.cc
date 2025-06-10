@@ -1,13 +1,15 @@
-#include "renderer.h"
+// Copyright 2025 Max Morgan
+
+#include "core/renderer.h"
 
 #include "core/render_engines/vulkan/vulkan_engine.h"
 #include "util/logger.h"
 
 DECLARE_LOG_CATEGORY(RENDERER);
 
-RenderEngine* engine;
+RenderEngine *engine;
 
-    VulkanEngine vkEngine;
+VulkanEngine vkEngine;
 void Renderer::init(app_state &state) {
   if (state.graphicsAPI == "Vulkan") {
     // Instantiate the backend
@@ -25,4 +27,7 @@ void Renderer::draw() {
   engine->draw();
 }
 
-void Renderer::cleanup() { engine->cleanup(); }
+void Renderer::cleanup() {
+  engine->cleanup();
+  engine = nullptr;
+}

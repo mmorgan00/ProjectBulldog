@@ -1,0 +1,7 @@
+repos:
+- repo: https://github.com/cpplint/cpplint
+  rev: 2.0.0 
+  hooks:
+  - id: cpplint
+    args: [--verbose=3, --linelength=120] 
+    files: '^orion/.*\.(h|cc)$'  # Target C/C++ filee

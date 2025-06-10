@@ -1,20 +1,23 @@
-#include "simdjson.h"
-#include <SDL.h>
+// // Copyright 2025 Max Morgan
 
+#include <string>
+
+#include "SDL.h"
 #include "core/engine_types.h"
 #include "core/renderer.h"
-#include "entry.h"
-#include "util/logger.h"
-
-using namespace simdjson;
+#include "orion/entry.h"
+#include "third_party/simdjson.h"
+#include "orion/util/logger.h"
 
 int main(int argc, char *argv[]) {
   DECLARE_LOG_CATEGORY(ORION);
   app_state state;
   // Load config
-  ondemand::parser parser;
-  padded_string json = padded_string::load("../../config/engine.conf");
-  ondemand::document config = parser.iterate(json);
+  simdjson::ondemand::parser parser;
+  simdjson::padded_string json =
+      simdjson::padded_string::load("../../config/engine.conf");
+  simdjson::ondemand::document config = parser.iterate(json);
+
   state.build(config);
   OE_LOG(ORION, INFO, "{}", std::string(state.appName));
   OE_LOG(ORION, INFO, "Running using {}", std::string(config["graphicsAPI"]));
@@ -31,8 +34,7 @@ int main(int argc, char *argv[]) {
     // Handle events on queue
     while (SDL_PollEvent(&e) != 0) {
       // close the window when user alt-f4s or clicks the X button
-      if (e.type == SDL_QUIT)
-        bQuit = true;
+      if (e.type == SDL_QUIT) bQuit = true;
 
       // Handle keypress
       if (e.type == SDL_KEYDOWN) {

@@ -24,6 +24,8 @@ set_target_properties(demo PROPERTIES
 )
 
 target_include_directories(demo PUBLIC
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/third_party 
     ${CMAKE_SOURCE_DIR}/orion/util
     ${CMAKE_SOURCE_DIR}/orion/core
     ${CMAKE_SOURCE_DIR}/orion/core/renderer_backends/vulkan)

@@ -1,14 +1,16 @@
+// Copyright 2025 Max Morgan
+
 #ifndef ORION_CORE_ENGINE_TYPES_H_
 #define ORION_CORE_ENGINE_TYPES_H_
-#include "simdjson.h"
 #include <string>
 
-using namespace simdjson;
+#include "third_party/simdjson.h"
+
 typedef struct app_state {
   std::string appName;
   std::string graphicsAPI;
 
-  void build(ondemand::document &data) {
+  void build(simdjson::ondemand::document &data) {
     auto appNameValue = data["appName"].get_string();
     if (!appNameValue.error()) {
       this->appName = std::string(appNameValue.value());
@@ -26,4 +28,4 @@ typedef struct app_state {
   }
 } app_state;
 
-#endif
+#endif  // ORION_CORE_ENGINE_TYPES_H_
