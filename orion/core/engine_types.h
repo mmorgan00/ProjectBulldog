@@ -5,7 +5,7 @@
 #include <simdjson.h>
 
 
-constexpr int FRAME_OVERLAP = 2;
+constexpr int MAX_CONCURRENT_FRAMES = 2;
 
 #include <string>
 typedef struct app_state {

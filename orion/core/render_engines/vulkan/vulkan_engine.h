@@ -16,6 +16,9 @@ class VulkanEngine : public RenderEngine {
   int _frameNumber{0};
   bool stop_rendering{false};
   VkExtent2D _windowExtent{1700, 900};
+	// To select the correct sync and command objects, we need to keep track of the current frame and (swapchain) image index
+	uint32_t currentFrame{ 0 };
+	uint32_t currentSemaphore{ 0 };
 
   struct SDL_Window* _window{nullptr};
 
@@ -26,14 +29,20 @@ class VulkanEngine : public RenderEngine {
   VkDevice _device;             // Vulkan device for commands
   VkSurfaceKHR _surface;        // Vulkan window surface
                                 // > Vk Resource handles
-  FrameData _frames[FRAME_OVERLAP];
-
+  FrameData _frames[MAX_CONCURRENT_FRAMES];
   FrameData& get_current_frame() {
-    return _frames[_frameNumber % FRAME_OVERLAP];
+    return _frames[_frameNumber % MAX_CONCURRENT_FRAMES];
   }
+	// Semaphores are used to coordinate operations within the graphics queue and ensure correct command ordering
+	std::vector<VkSemaphore> presentCompleteSemaphores{};
+	std::vector<VkSemaphore> renderCompleteSemaphores{};
+	// Fences are used to make sure command buffers aren't rerecorded until they've finished executing
+	std::array<VkFence, MAX_CONCURRENT_FRAMES> waitFences{};
 
   VkQueue _graphicsQueue;
   uint32_t _graphicsQueueFamily;
+
+
 
   void init_vulkan(app_state& state);
   void init_swapchain();

@@ -36,13 +36,18 @@ bool VulkanEngine::init(app_state& state) {
 void VulkanEngine::cleanup() {
   if (_isInitialized) {
     vkDeviceWaitIdle(_device);
-    for (int i = 0; i < FRAME_OVERLAP; i++) {
+
+    for (int i = 0; i < MAX_CONCURRENT_FRAMES; i++) {
       vkDestroyCommandPool(_device, _frames[i]._commandPool, nullptr);
 
       // destroy sync objects
       vkDestroyFence(_device, _frames[i]._renderFence, nullptr);
-      vkDestroySemaphore(_device, _frames[i]._renderSemaphore, nullptr);
-      vkDestroySemaphore(_device, _frames[i]._swapchainSemaphore, nullptr);
+    }
+    for (size_t i = 0; i < presentCompleteSemaphores.size(); i++) {
+      vkDestroySemaphore(_device, presentCompleteSemaphores[i], nullptr);
+    }
+    for (size_t i = 0; i < renderCompleteSemaphores.size(); i++) {
+      vkDestroySemaphore(_device, renderCompleteSemaphores[i], nullptr);
     }
     destroy_swapchain();
     vkDestroySurfaceKHR(_instance, _surface, nullptr);
@@ -70,7 +75,7 @@ void VulkanEngine::draw() {
   // request image from the swapchain
   uint32_t swapchainImageIndex;
   VK_CHECK(vkAcquireNextImageKHR(_device, _swapchain, 1000000000,
-                                 get_current_frame()._swapchainSemaphore,
+                                 presentCompleteSemaphores[currentSemaphore],
                                  nullptr, &swapchainImageIndex));
   //< draw_2
 
@@ -130,10 +135,10 @@ void VulkanEngine::draw() {
 
   VkSemaphoreSubmitInfo waitInfo = vkinit::semaphore_submit_info(
       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR,
-      get_current_frame()._swapchainSemaphore);
+      presentCompleteSemaphores[currentSemaphore]);
   VkSemaphoreSubmitInfo signalInfo =
       vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
-                                    get_current_frame()._renderSemaphore);
+          renderCompleteSemaphores[currentSemaphore]);
 
   VkSubmitInfo2 submit = vkinit::submit_info(&cmdinfo, &signalInfo, &waitInfo);
 
@@ -155,7 +160,7 @@ void VulkanEngine::draw() {
   presentInfo.pSwapchains = &_swapchain;
   presentInfo.swapchainCount = 1;
 
-  presentInfo.pWaitSemaphores = &get_current_frame()._renderSemaphore;
+  presentInfo.pWaitSemaphores = &renderCompleteSemaphores[currentSemaphore];
   presentInfo.waitSemaphoreCount = 1;
 
   presentInfo.pImageIndices = &swapchainImageIndex;
@@ -165,6 +170,10 @@ void VulkanEngine::draw() {
   // increase the number of frames drawn
   _frameNumber++;
   //< draw_6
+		// Select the next frame to render to, based on the max. no. of concurrent frames
+		currentFrame = (currentFrame + 1) % MAX_CONCURRENT_FRAMES;
+		// Similar for the semaphores, which need to be unique to the swapchain images
+		currentSemaphore = (currentSemaphore + 1) % _swapchainImages.size();
 }
 
 //< Initializations
@@ -239,7 +248,7 @@ void VulkanEngine::init_commands() {
   commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
   commandPoolInfo.queueFamilyIndex = _graphicsQueueFamily;
 
-  for (int i = 0; i < FRAME_OVERLAP; i++) {
+  for (int i = 0; i < MAX_CONCURRENT_FRAMES; i++) {
     VK_CHECK(vkCreateCommandPool(_device, &commandPoolInfo, nullptr,
                                  &_frames[i]._commandPool));
 
@@ -256,14 +265,22 @@ void VulkanEngine::init_sync_structures() {
       vkinit::fence_create_info(VK_FENCE_CREATE_SIGNALED_BIT);
   VkSemaphoreCreateInfo semaphoreCreateInfo = vkinit::semaphore_create_info(0);
 
-  for (int i = 0; i < FRAME_OVERLAP; i++) {
+  for (int i = 0; i < MAX_CONCURRENT_FRAMES; i++) {
     VK_CHECK(vkCreateFence(_device, &fenceCreateInfo, nullptr,
                            &_frames[i]._renderFence));
+  }
+  presentCompleteSemaphores.resize(_swapchainImages.size());
+  renderCompleteSemaphores.resize(_swapchainImages.size());
 
+  for (int i = 0; i < _swapchainImages.size(); i++) {
+    // Semaphore used to ensure that image presentation is complete before
+    // starting to submit again
     VK_CHECK(vkCreateSemaphore(_device, &semaphoreCreateInfo, nullptr,
-                               &_frames[i]._swapchainSemaphore));
+                               &presentCompleteSemaphores[i]));
+    // Semaphore used to ensure that all commands submitted have been finished
+    // before submitting the image to the queue
     VK_CHECK(vkCreateSemaphore(_device, &semaphoreCreateInfo, nullptr,
-                               &_frames[i]._renderSemaphore));
+                               &renderCompleteSemaphores[i]));
   }
 }
 
