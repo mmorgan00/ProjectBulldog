@@ -29,8 +29,6 @@ class VulkanEngine : public RenderEngine {
   FrameData _frames[FRAME_OVERLAP];
 
   FrameData& get_current_frame() {
-    OE_LOG(VULKAN_ENGINE, INFO, "FRAME {} OVERLAP {}", _frameNumber,
-           FRAME_OVERLAP);
     return _frames[_frameNumber % FRAME_OVERLAP];
   }
 
