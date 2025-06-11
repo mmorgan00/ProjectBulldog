@@ -167,4 +167,8 @@ class Logger {
 #define OE_LOG(Category, Verbosity, Format, ...) \
   Category.Verbosity(Format, ##__VA_ARGS__);
 
+
+DECLARE_LOG_CATEGORY(RENDERER);
+DECLARE_LOG_CATEGORY(CORE);
+
 #endif  // ORION_UTIL_LOGGER_H_

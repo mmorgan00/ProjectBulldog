@@ -5,8 +5,6 @@
 #include "core/render_engines/vulkan/vulkan_engine.h"
 #include "util/logger.h"
 
-DECLARE_LOG_CATEGORY(RENDERER);
-
 RenderEngine *engine;
 
 VulkanEngine vkEngine;

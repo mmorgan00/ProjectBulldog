@@ -5,7 +5,6 @@ add_library(vkbootstrap STATIC)
 add_library(nlohmann INTERFACE)
 add_library(glm INTERFACE)
 add_library(vma INTERFACE)
-
 add_library(stb_image INTERFACE)
 
 add_subdirectory(fastgltf)

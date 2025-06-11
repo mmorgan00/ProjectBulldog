@@ -10,6 +10,10 @@ add_executable(demo
   core/renderer.h
   core/render_engines/vulkan/vulkan_engine.cc
   core/render_engines/vulkan/vulkan_engine.h
+  core/render_engines/vulkan/vulkan_initializers.h
+  core/render_engines/vulkan/vulkan_initializers.cc
+  core/render_engines/vulkan/vulkan_images.cc
+  core/render_engines/vulkan/vulkan_images.h
 )
 
 set_property(TARGET demo PROPERTY CXX_STANDARD 20)
