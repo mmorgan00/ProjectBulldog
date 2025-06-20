@@ -1,5 +1,4 @@
 // Copyright 2025 Max Morgan
-
 #ifndef ORION_UTIL_CONTAINERS_H_
 #define ORION_UTIL_CONTAINERS_H_
 

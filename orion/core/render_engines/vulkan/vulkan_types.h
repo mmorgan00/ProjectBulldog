@@ -2,7 +2,9 @@
 #ifndef ORION_CORE_RENDER_ENGINES_VULKAN_VULKAN_TYPES_H_
 #define ORION_CORE_RENDER_ENGINES_VULKAN_VULKAN_TYPES_H_
 
+#include <util/containers.h>
 #include <util/logger.h>
+#include <vk_mem_alloc.h>
 #include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vulkan.h>
 /**
@@ -13,7 +15,16 @@ typedef struct FrameData {
   VkCommandPool _commandPool;
   VkCommandBuffer _mainCommandBuffer;
   VkFence _renderFence;
+  DeletionQueue _deletionQueue;
 } FrameData;
+
+struct AllocatedImage {
+  VkImage image;
+  VkImageView imageView;
+  VmaAllocation allocation;
+  VkExtent3D imageExtent;
+  VkFormat imageFormat;
+};
 
 DECLARE_LOG_CATEGORY(VULKAN_VALIDATION)
 
