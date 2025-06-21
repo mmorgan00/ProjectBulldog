@@ -1,0 +1,6 @@
+{
+  "background": {
+    "type": "shader",
+    "assetRef": "demo/gradient.comp"
+  }
+}

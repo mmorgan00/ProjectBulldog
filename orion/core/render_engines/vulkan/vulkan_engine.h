@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "core/engine_types.h"
+#include "core/render_engines/vulkan/vulkan_descriptors.h"
 #include "core/render_engines/vulkan/vulkan_types.h"
 #include "util/logger.h"
 
@@ -31,9 +32,9 @@ class VulkanEngine : public RenderEngine {
 
   //< Render loop resources
   AllocatedImage _drawImage;
+  VkExtent2D _drawExtent;
   VkExtent2D _drawImageExtent;
   //> Render loop resources
-
 
   //< Vk resource handles
   VkInstance _instance;                       // Vulkan library handle
@@ -61,6 +62,9 @@ class VulkanEngine : public RenderEngine {
   void init_swapchain();
   void init_commands();
   void init_sync_structures();
+  void init_descriptors();
+  void init_pipelines();
+  void init_background_pipeline();
 
   VkSwapchainKHR _swapchain;
   VkFormat _swapchainImageFormat;
@@ -73,6 +77,16 @@ class VulkanEngine : public RenderEngine {
   VkExtent2D _swapchainExtent;
 
  public:
+  // Descriptor sets
+  DescriptorAllocator globalDescriptorAllocator;
+
+  VkDescriptorSet _drawImageDescriptors;
+  VkDescriptorSetLayout _drawImageDescriptorLayout;
+
+  // Pipelines
+  VkPipeline _gradientPipeline;
+  VkPipelineLayout _gradientPipelineLayout;
+
   bool init(app_state& state) override;
   // draw loop
   void draw() override;
