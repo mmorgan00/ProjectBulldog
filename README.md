@@ -15,14 +15,15 @@
         - volk -> vulkan helper library
     - Vulkan, notably, is not listed here, as the Vulkan SDK/drivers must be installed in the system. This is hopefully something I will include already in any prebuilt binaries I produce
 2. orion directory
-    - This contains the source code for the underlying engine. I chose the name Orion after the submarine USS Orion my grandpa was a CO of during his service in the navy, which was the focal poinnt of a report I did on him in middleschool. RIP Bopba.
-    - The center of this is an entry.hpp file, which for now, defines the following:
+    - This contains the source code for the underlying engine. I chose the name Orion after the submarine USS Orion my grandpa was a CO of during his service in the Navy
+    - The center of this is an entry.h file, which for now, defines the following:
     ```cpp
     extern void init();
 
     extern void run();
 
     ```
+    Program execution then follows:
     ```cpp
     int main(){
     ...
@@ -34,6 +35,36 @@
     ```
     - Rather than hardcoding a execution flow, the goal is a config/data driven execution and an inversion of control
     - Scenes, assets, textures/materials and so on will be defined outside of the program and loaded at runtime to dictate execution
+3. Sandbox
+    - This contains the demo project I will use as a testbed for new features. Right now it is fairly empty, and mainly serves to validate the build and execution process.
+    - Next major commit should contain the scene declaration and running, which will be showcased here
+
+### Renderer overview
+- Current renderer support is limited, as the engine refactor is not-yet complete. Previous commits and other branches contain much more functional rendering of a full GLB file with material support:
+![Station Render example](screenshots/Station-Render.png "Station GLB Render")
+> Screenshot captured in-engine
+- Currently, a compute shader execution to set a background is supported.
+- Proper named renderpasses in vulkan are not used. As of Vulkan 1.3, dynamic rendering is supported, which is what I am using
+    - Current draw process psuedo code is as follows:
+    ```
+    run(){
+    gameDefinedTick();
+    engineUpdate(); // Physics updates, input handling, etc. 
+
+    // Render specific steps
+    
+    drawImage = allocateImage(); // An image is requested from the swapchain to support better draw resolution. This will be transitioned into the required formats for each draw step
+    transitionImage(drawImage); // Transition for drawing into
+    runComputeBackground(drawImage); // Compute background is first drawn 
+    for(object in drawableObjects) {  // Objects are sorted based on required pipelines to optimizing un-neccessary rebinds of pipelines
+        objectDraw(drawImage);
+    }
+    transitionImage(drawImage); // Transition for presenting
+    copyImage(drawImage, presentImage);
+    swapchainPresentImage(presentImage);
+    }
+    ```
+    - We do not declare a dedicated 'renderpass' and instead use our own image to draw into along the way. This will help down the road for better postprocess effects.
     
 
 ### Engine API
@@ -64,10 +95,13 @@
 
 ### Feature roadmap
 - [x] Build system revamp
-- [ ] scene graph declaration
-    - The goal here is JSON/XML based level declaration. I don't have a proper level editor yet, and building one will be a substantial undertaking
-    - This admittely will play nicely into a level editor reading/writing from files,
-    - Down the road, this will play into an asset system that compiles into binary for faster runtime loading in release builds
+- [x] scene graph declaration 
+    - Initial background declaration done
+    - Scenes directory will contain this. There is a very primitive scene that points to the compute shader to be used as the background. It should look something like this:
+![Compute Background in demo scene](screenshots/Demo-Shader-BG.png "Gradient background showing compute shader execution") 
+        - Note: on some of my machines I have run into an issue where this outputs a black screen instead of the intended gradient. You may experience this as well despite Renderdoc showing a seemingly otherwise normal compute shader execution
+        ![Renderdoc screenshot](screenshots/Renderdoc-demo-scene-output.png "Renderdoc compute shader display")
+    - Further progress will have object, mesh files, script referencing, materials, and so on, that is assembled into a scene graph.
 - [ ] ECS/Actor system 
     - The aim is an OOP driven class sytem:
         - Nodes in the scene graph can be labeled with an actor name
@@ -77,14 +111,14 @@
 - [ ] Physics system
     - At minimum, giving actors the ability to move around and a basic collision system. 
 - [ ] Audio
-    - We're already including SDL, some basic static audio would be nice
 - [ ] PBR Material support
     - Better material support since previous status included GLB loading. 
 - [ ] Rendering improvements
     - This will be a continual area of effort. There are a LOT of things I want to work with.
         - Deferred rendering. Likely first candidate
+        - Hybrid rendering, as a followup to deferred rendering, for adding real-time raytracing for the finer effects, reflections and more. Using this [blogpost](https://www.gamedev.net/projects/380-real-time-hybrid-rasterization-raytracing-engine/) as a reference point for desired functionality.
         - GPU driven/compute based rendering, especially for instanced objects
-        - Proper lighting, if at minimum this means shadowmaps
+        - Proper lighting. I was contemplating starting with shadowmaps, however given my plan for hybrid rendering I may jump straight to ray-traced shadows
 - [ ] Multi-API graphics
     - Vulkan was the first choice as a) I develop on linux and b) it's cross platform already to my other windows machine
         - As of [9c1d1ad](https://github.com/mmorgan00/ProjectBulldog/commit/9c1d1ade00d5fd01d00b8154a1914d967b91971d), render module supports a backend abstraction from rest of the app
