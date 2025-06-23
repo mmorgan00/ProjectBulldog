@@ -41,6 +41,11 @@ VkImageCreateInfo image_create_info(VkFormat format,
 VkImageViewCreateInfo imageview_create_info(VkFormat format, VkImage image,
                                             VkImageAspectFlags aspectFlags);
 
+// Pipelines
+
+VkPipelineShaderStageCreateInfo pipeline_shader_stage_create_info(
+    VkShaderStageFlagBits stage, VkShaderModule shaderModule);
+
 }  // namespace vkinit
 
 #endif  // ORION_CORE_RENDER_ENGINES_VULKAN_VULKAN_INITIALIZERS_H_
