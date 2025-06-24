@@ -9,6 +9,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include <vector>
+#include <algorithm>
 
 #include "core/engine_types.h"
 #include "orion/core/render_engines/vulkan/vulkan_images.h"
@@ -83,8 +84,8 @@ void VulkanEngine::draw_background(VkCommandBuffer cmd) {
 
   // execute the compute pipeline dispatch. We are using 16x16 workgroup size so
   // we need to divide by it
-  vkCmdDispatch(cmd, std::ceil(_drawImageExtent.width / 16.0),
-                std::ceil(_drawImageExtent.height / 16.0), 1);
+  vkCmdDispatch(cmd, std::ceil(_drawImage.imageExtent.width / 16.0),
+                std::ceil(_drawImage.imageExtent.height / 16.0), 1);
 }
 
 void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
@@ -140,6 +141,11 @@ void VulkanEngine::draw() {
   VK_CHECK(vkAcquireNextImageKHR(_device, _swapchain, 1000000000,
                                  presentCompleteSemaphores[currentSemaphore],
                                  nullptr, &swapchainImageIndex));
+  // Set our draw image size based on the image we obtained
+  _drawExtent.height =
+      std::min(_swapchainExtent.height, _drawImage.imageExtent.height);
+  _drawExtent.width =
+      std::min(_swapchainExtent.width, _drawImage.imageExtent.width);
   //< draw_2
 
   //> draw_3
@@ -154,10 +160,6 @@ void VulkanEngine::draw() {
   // once, so we want to let vulkan know that
   VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(
       VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
-  // start the command buffer recording
-  _drawExtent.width = _drawImage.imageExtent.width;
-  _drawExtent.height = _drawImage.imageExtent.height;
 
   VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
@@ -534,7 +536,6 @@ void VulkanEngine::create_swapchain(uint32_t width, uint32_t height) {
   // store swapchain and its related images
   _swapchain = vkbSwapchain.swapchain;
   _swapchainImages = vkbSwapchain.get_images().value();
-  OE_LOG(VULKAN_ENGINE, INFO, "Swapchain images {}", _swapchainImages.size());
   _swapchainImageViews = vkbSwapchain.get_image_views().value();
 }
 
