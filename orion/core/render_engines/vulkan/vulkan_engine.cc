@@ -5,17 +5,17 @@
 #include <SDL.h>
 #include <SDL_vulkan.h>
 #include <VkBootstrap.h>
-#include <core/engine_types.h>
 #include <fmt/printf.h>
-#include <orion/core/render_engines/vulkan/vulkan_initializers.h>
-#include <util/logger.h>
 #include <vulkan/vulkan_core.h>
 
 #include <vector>
 
+#include "core/engine_types.h"
 #include "orion/core/render_engines/vulkan/vulkan_images.h"
+#include "orion/core/render_engines/vulkan/vulkan_initializers.h"
 #include "orion/core/render_engines/vulkan/vulkan_pipelines.h"
 #include "orion/core/render_engines/vulkan/vulkan_types.h"
+#include "util/logger.h"
 
 #define VMA_IMPLEMENTATION
 #include "third_party/vma/vk_mem_alloc.h"
@@ -87,6 +87,42 @@ void VulkanEngine::draw_background(VkCommandBuffer cmd) {
                 std::ceil(_drawImageExtent.height / 16.0), 1);
 }
 
+void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
+  // begin a render pass  connected to our draw image
+  VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(
+      _drawImage.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+  VkRenderingInfo renderInfo =
+      vkinit::rendering_info(_drawExtent, &colorAttachment, nullptr);
+  vkCmdBeginRendering(cmd, &renderInfo);
+
+  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _defaultPipeline);
+
+  // set dynamic viewport and scissor
+  VkViewport viewport = {};
+  viewport.x = 0;
+  viewport.y = 0;
+  viewport.width = _drawExtent.width;
+  viewport.height = _drawExtent.height;
+  viewport.minDepth = 0.f;
+  viewport.maxDepth = 1.f;
+
+  vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+  VkRect2D scissor = {};
+  scissor.offset.x = 0;
+  scissor.offset.y = 0;
+  scissor.extent.width = _drawExtent.width;
+  scissor.extent.height = _drawExtent.height;
+
+  vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+  // launch a draw command to draw 3 vertices
+  vkCmdDraw(cmd, 3, 1, 0, 0);
+
+  vkCmdEndRendering(cmd);
+}
+
 void VulkanEngine::draw() {
   //> draw_1
   // wait until the gpu has finished rendering the last frame. Timeout of 1
@@ -132,9 +168,15 @@ void VulkanEngine::draw() {
 
   draw_background(cmd);
 
+  vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL,
+                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+  draw_geometry(cmd);
+
   // transition the draw image and the swapchain image into their correct
   // transfer layouts
-  vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL,
+  vkutil::transition_image(cmd, _drawImage.image,
+                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
   vkutil::transition_image(cmd, _swapchainImages[swapchainImageIndex],
                            VK_IMAGE_LAYOUT_UNDEFINED,
@@ -369,7 +411,64 @@ void VulkanEngine::init_descriptors() {
   });
 }
 
-void VulkanEngine::init_pipelines() { init_background_pipeline(); }
+void VulkanEngine::init_pipelines() {
+  init_background_pipeline();
+  init_default_pipeline();
+}
+
+void VulkanEngine::init_default_pipeline() {
+  VkShaderModule vertShader;
+  if (!vkutil::load_shader_module("../../assets/shaders/default.vert.spv",
+                                  _device, &vertShader)) {
+    OE_LOG(VULKAN_ENGINE, FATAL,
+           "Failed to load default pipeline fragment shader");
+  }
+  VkShaderModule fragShader;
+  if (!vkutil::load_shader_module("../../assets/shaders/default.frag.spv",
+                                  _device, &fragShader)) {
+    OE_LOG(VULKAN_ENGINE, FATAL,
+           "Failed to load default pipeline fragment shader");
+  }
+  VkPipelineLayoutCreateInfo pipeline_layout_info =
+      vkinit::pipeline_layout_create_info();
+  VK_CHECK(vkCreatePipelineLayout(_device, &pipeline_layout_info, nullptr,
+                                  &_defaultPipelineLayout));
+
+  PipelineBuilder pipelineBuilder;
+
+  // use the triangle layout we created
+  pipelineBuilder._pipelineLayout = _defaultPipelineLayout;
+  // connecting the vertex and pixel shaders to the pipeline
+  pipelineBuilder.set_shaders(vertShader, fragShader);
+  // it will draw triangles
+  pipelineBuilder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+  // filled triangles
+  pipelineBuilder.set_polygon_mode(VK_POLYGON_MODE_FILL);
+  // no backface culling
+  pipelineBuilder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+  // no multisampling
+  pipelineBuilder.set_multisampling_none();
+  // no blending
+  pipelineBuilder.disable_blending();
+  // no depth testing
+  pipelineBuilder.disable_depthtest();
+
+  // connect the image format we will draw into, from draw image
+  pipelineBuilder.set_color_attachment_format(_drawImage.imageFormat);
+  pipelineBuilder.set_depth_format(VK_FORMAT_UNDEFINED);
+
+  // finally build the pipeline
+  _defaultPipeline = pipelineBuilder.build_pipeline(_device);
+
+  // clean structures
+  vkDestroyShaderModule(_device, fragShader, nullptr);
+  vkDestroyShaderModule(_device, vertShader, nullptr);
+
+  _mainDeletionQueue.push_function([&]() {
+    vkDestroyPipelineLayout(_device, _defaultPipelineLayout, nullptr);
+    vkDestroyPipeline(_device, _defaultPipeline, nullptr);
+  });
+}
 
 void VulkanEngine::init_background_pipeline() {
   // build layout first.
@@ -442,11 +541,7 @@ void VulkanEngine::create_swapchain(uint32_t width, uint32_t height) {
 void VulkanEngine::init_swapchain() {
   create_swapchain(_windowExtent.width, _windowExtent.height);
 
-VkExtent3D drawImageExtent = {
-		_windowExtent.width,
-		_windowExtent.height,
-		1
-	};
+  VkExtent3D drawImageExtent = {_windowExtent.width, _windowExtent.height, 1};
 
   // hardcoding the draw format to 32 bit float
   _drawImage.imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
@@ -479,7 +574,7 @@ VkExtent3D drawImageExtent = {
       vkCreateImageView(_device, &rview_info, nullptr, &_drawImage.imageView));
 
   // add to deletion queues
-  _mainDeletionQueue.push_function([=]() {
+  _mainDeletionQueue.push_function([this]() {
     vkDestroyImageView(_device, _drawImage.imageView, nullptr);
     vmaDestroyImage(_allocator, _drawImage.image, _drawImage.allocation);
   });

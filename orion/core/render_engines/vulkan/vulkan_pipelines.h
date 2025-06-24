@@ -44,6 +44,10 @@ class PipelineBuilder {
   void set_color_attachment_format(VkFormat format);
 
   void set_depth_format(VkFormat format);
+
+  void disable_blending();
+
+  void disable_depthtest();
 };
 
 #endif  // ORION_CORE_RENDER_ENGINES_VULKAN_VULKAN_PIPELINES_H_

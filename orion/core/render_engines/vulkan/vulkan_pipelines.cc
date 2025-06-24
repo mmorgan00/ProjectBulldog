@@ -4,9 +4,9 @@
 #include <fstream>
 #include <vector>
 
-#include "orion/util/logger.h"
 #include "orion/core/render_engines/vulkan/vulkan_engine.h"
 #include "orion/core/render_engines/vulkan/vulkan_initializers.h"
+#include "orion/util/logger.h"
 
 bool vkutil::load_shader_module(const char* filePath, VkDevice device,
                                 VkShaderModule* outShaderModule) {
@@ -193,4 +193,25 @@ void PipelineBuilder::set_color_attachment_format(VkFormat format) {
 
 void PipelineBuilder::set_depth_format(VkFormat format) {
   _renderInfo.depthAttachmentFormat = format;
+}
+
+void PipelineBuilder::disable_depthtest() {
+  _depthStencil.depthTestEnable = VK_FALSE;
+  _depthStencil.depthWriteEnable = VK_FALSE;
+  _depthStencil.depthCompareOp = VK_COMPARE_OP_NEVER;
+  _depthStencil.depthBoundsTestEnable = VK_FALSE;
+  _depthStencil.stencilTestEnable = VK_FALSE;
+  _depthStencil.front = {};
+  _depthStencil.back = {};
+  _depthStencil.minDepthBounds = 0.f;
+  _depthStencil.maxDepthBounds = 1.f;
+}
+
+void PipelineBuilder::disable_blending() {
+  // default write mask
+  _colorBlendAttachment.colorWriteMask =
+      VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+      VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+  // no blending
+  _colorBlendAttachment.blendEnable = VK_FALSE;
 }

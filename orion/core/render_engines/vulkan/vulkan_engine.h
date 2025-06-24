@@ -65,6 +65,7 @@ class VulkanEngine : public RenderEngine {
   void init_descriptors();
   void init_pipelines();
   void init_background_pipeline();
+  void init_default_pipeline();
 
   VkSwapchainKHR _swapchain;
   VkFormat _swapchainImageFormat;
@@ -87,10 +88,14 @@ class VulkanEngine : public RenderEngine {
   VkPipeline _gradientPipeline;
   VkPipelineLayout _gradientPipelineLayout;
 
+  VkPipelineLayout _defaultPipelineLayout;
+  VkPipeline _defaultPipeline;
+
   bool init(app_state& state) override;
   // draw loop
   void draw() override;
   void draw_background(VkCommandBuffer cmd);
+  void draw_geometry(VkCommandBuffer cmd);
   // shuts down the engine
   void cleanup() override;
 };
