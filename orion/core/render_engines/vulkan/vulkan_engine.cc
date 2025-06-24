@@ -8,8 +8,8 @@
 #include <fmt/printf.h>
 #include <vulkan/vulkan_core.h>
 
-#include <vector>
 #include <algorithm>
+#include <vector>
 
 #include "core/engine_types.h"
 #include "orion/core/render_engines/vulkan/vulkan_images.h"
@@ -484,7 +484,8 @@ void VulkanEngine::init_background_pipeline() {
                                   &_gradientPipelineLayout));
 
   VkShaderModule computeDrawShader;
-  if (!vkutil::load_shader_module("../../assets/shaders/gradient.comp.spv",
+  // TODO: Load this properly?
+  if (!vkutil::load_shader_module("../../assets/shaders/wave.comp.spv",
                                   _device, &computeDrawShader)) {
     fmt::print("Error when building the compute shader \n");
   }

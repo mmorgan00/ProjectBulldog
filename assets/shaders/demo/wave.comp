@@ -1,0 +1,16 @@
+#version 460
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(rgba16f, set = 0, binding = 0) uniform image2D image;
+
+void main() {
+    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size = imageSize(image);
+    vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
+
+    if (texelCoord.x < size.x && texelCoord.y < size.y) {
+        float wave = sin(float(texelCoord.x) * 0.1) * 0.5 + 0.5;
+        color = vec4(wave, 0.2, 1.0 - wave, 1.0);
+        imageStore(image, texelCoord, color);
+    }
+}

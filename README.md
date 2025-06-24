@@ -43,7 +43,7 @@
 - Current renderer support is limited, as the engine refactor is not-yet complete. Previous commits and other branches contain much more functional rendering of a full GLB file with material support:
 ![Station Render example](screenshots/Station-Render.png "Station GLB Render")
 > Screenshot captured in-engine
-- Currently, a compute shader execution to set a background is supported.
+- Currently, a compute shader execution to set a background is supported, and a primitive graphics pipeline (mesh loading is next to be implemented);
 - Proper named renderpasses in vulkan are not used. As of Vulkan 1.3, dynamic rendering is supported, which is what I am using
     - Current draw process psuedo code is as follows:
     ```
@@ -97,10 +97,8 @@
 - [x] Build system revamp
 - [x] scene graph declaration 
     - Initial background declaration done
-    - Scenes directory will contain this. There is a very primitive scene that points to the compute shader to be used as the background. It should look something like this:
-![Compute Background in demo scene](screenshots/Demo-Shader-BG.png "Gradient background showing compute shader execution") 
-        - Note: on some of my machines I have run into an issue where this outputs a black screen instead of the intended gradient. You may experience this as well despite Renderdoc showing a seemingly otherwise normal compute shader execution
-        ![Renderdoc screenshot](screenshots/Renderdoc-demo-scene-output.png "Renderdoc compute shader display")
+    - Scenes directory will contain this. There is a very primitive scene that points to the compute shader to be used as the background, with a 'hello triangle' graphics pipeline. It should look something like this:
+![Compute Background with trianglle in demo scene](screenshots/CurrentStatus.png "Gradient background with a triangle showing compute shader execution") 
     - Further progress will have object, mesh files, script referencing, materials, and so on, that is assembled into a scene graph.
 - [ ] ECS/Actor system 
     - The aim is an OOP driven class sytem:
