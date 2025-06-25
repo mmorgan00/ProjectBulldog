@@ -4,6 +4,8 @@
 #define ORION_CORE_RENDERER_H_
 
 #include <render_engine.h>
+#include <string>
+#include <memory>
 
 class Renderer {
  public:
@@ -20,8 +22,13 @@ class Renderer {
    */
   void draw();
 
+  /**
+   * @brief loads a scene by name
+   */
+  void loadScene(std::string sceneName);
+
  private:
-  RenderEngine* engine;
+  std::unique_ptr<RenderEngine> engine;
 };
 
 #endif  // ORION_CORE_RENDERER_H_

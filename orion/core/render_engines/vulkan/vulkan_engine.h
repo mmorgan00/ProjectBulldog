@@ -92,6 +92,7 @@ class VulkanEngine : public RenderEngine {
   VkPipeline _defaultPipeline;
 
   bool init(app_state& state) override;
+  void loadScene() override;
   // draw loop
   void draw() override;
   void draw_background(VkCommandBuffer cmd);

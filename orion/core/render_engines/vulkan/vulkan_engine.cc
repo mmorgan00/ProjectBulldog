@@ -73,6 +73,9 @@ void VulkanEngine::cleanup() {
   loadedEngine = nullptr;
 }
 
+void VulkanEngine::loadScene() {
+}
+
 void VulkanEngine::draw_background(VkCommandBuffer cmd) {
   // bind the gradient drawing compute pipeline
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, _gradientPipeline);
@@ -485,8 +488,8 @@ void VulkanEngine::init_background_pipeline() {
 
   VkShaderModule computeDrawShader;
   // TODO: Load this properly?
-  if (!vkutil::load_shader_module("../../assets/shaders/wave.comp.spv",
-                                  _device, &computeDrawShader)) {
+  if (!vkutil::load_shader_module("../../assets/shaders/gradient.comp.spv", _device,
+                                  &computeDrawShader)) {
     fmt::print("Error when building the compute shader \n");
   }
 

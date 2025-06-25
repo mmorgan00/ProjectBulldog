@@ -26,6 +26,7 @@ int main(int argc, char *argv[]) {
   renderer.init(state);
   // Call game initialization
   init();
+  renderer.loadScene("demo");
 
   // Main loop
   bool bQuit = false;

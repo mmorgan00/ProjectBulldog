@@ -15,6 +15,7 @@ class RenderEngine {
    */
   virtual bool init(app_state& state) = 0;
   virtual ~RenderEngine() = default;
+  virtual void loadScene() = 0;
   virtual void draw() = 0;
   virtual void cleanup() = 0;
 };
