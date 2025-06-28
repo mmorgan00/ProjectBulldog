@@ -73,9 +73,9 @@ void VulkanEngine::cleanup() {
   loadedEngine = nullptr;
 }
 
-void VulkanEngine::loadScene() {
-}
+void VulkanEngine::loadScene() {}
 
+//> Draw calls
 void VulkanEngine::draw_background(VkCommandBuffer cmd) {
   // bind the gradient drawing compute pipeline
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, _gradientPipeline);
@@ -252,6 +252,97 @@ void VulkanEngine::draw() {
   // Similar for the semaphores, which need to be unique to the swapchain images
   currentSemaphore = (currentSemaphore + 1) % _swapchainImages.size();
 }
+//> Draw calls
+
+//< Buffer management
+AllocatedBuffer VulkanEngine::create_buffer(size_t allocSize,
+                                            VkBufferUsageFlags usage,
+                                            VmaMemoryUsage memoryUsage) {
+  // allocate buffer
+  VkBufferCreateInfo bufferInfo = {.sType =
+                                       VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+  bufferInfo.pNext = nullptr;
+  bufferInfo.size = allocSize;
+
+  bufferInfo.usage = usage;
+
+  VmaAllocationCreateInfo vmaallocInfo = {};
+  vmaallocInfo.usage = memoryUsage;
+  vmaallocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+  AllocatedBuffer newBuffer;
+
+  // allocate the buffer
+  VK_CHECK(vmaCreateBuffer(_allocator, &bufferInfo, &vmaallocInfo,
+                           &newBuffer.buffer, &newBuffer.allocation,
+                           &newBuffer.info));
+
+  return newBuffer;
+}
+
+void VulkanEngine::destroy_buffer(const AllocatedBuffer& buffer) {
+  vmaDestroyBuffer(_allocator, buffer.buffer, buffer.allocation);
+}
+
+GPUMeshBuffers VulkanEngine::uploadMesh(std::span<uint32_t> indices,
+                                        std::span<Vertex> vertices) {
+  const size_t vertexBufferSize = vertices.size() * sizeof(Vertex);
+  const size_t indexBufferSize = indices.size() * sizeof(uint32_t);
+
+  GPUMeshBuffers newSurface;
+
+  // create vertex buffer
+  newSurface.vertexBuffer = create_buffer(
+      vertexBufferSize,
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+          VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+      VMA_MEMORY_USAGE_GPU_ONLY);
+
+  // find the adress of the vertex buffer
+  VkBufferDeviceAddressInfo deviceAdressInfo{
+      .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+      .buffer = newSurface.vertexBuffer.buffer};
+  newSurface.vertexBufferAddress =
+      vkGetBufferDeviceAddress(_device, &deviceAdressInfo);
+
+  // create index buffer
+  newSurface.indexBuffer = create_buffer(
+      indexBufferSize,
+      VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+      VMA_MEMORY_USAGE_GPU_ONLY);
+  AllocatedBuffer staging = create_buffer(vertexBufferSize + indexBufferSize,
+                                          VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                          VMA_MEMORY_USAGE_CPU_ONLY);
+
+  void* data = staging.allocation->GetMappedData();
+
+  // copy vertex buffer
+  memcpy(data, vertices.data(), vertexBufferSize);
+  // copy index buffer
+  memcpy(reinterpret_cast<char*>(data) + vertexBufferSize, indices.data(), indexBufferSize);
+
+  immediate_submit([&](VkCommandBuffer cmd) {
+    VkBufferCopy vertexCopy{0};
+    vertexCopy.dstOffset = 0;
+    vertexCopy.srcOffset = 0;
+    vertexCopy.size = vertexBufferSize;
+
+    vkCmdCopyBuffer(cmd, staging.buffer, newSurface.vertexBuffer.buffer, 1,
+                    &vertexCopy);
+
+    VkBufferCopy indexCopy{0};
+    indexCopy.dstOffset = 0;
+    indexCopy.srcOffset = vertexBufferSize;
+    indexCopy.size = indexBufferSize;
+
+    vkCmdCopyBuffer(cmd, staging.buffer, newSurface.indexBuffer.buffer, 1,
+                    &indexCopy);
+  });
+
+  destroy_buffer(staging);
+
+  return newSurface;
+}
+//> Buffer management
 
 //< Initializations
 void VulkanEngine::init_vulkan(app_state& state) {
@@ -345,6 +436,15 @@ void VulkanEngine::init_commands() {
     VK_CHECK(vkAllocateCommandBuffers(_device, &cmdAllocInfo,
                                       &_frames[i]._mainCommandBuffer));
   }
+  // Immediate submit resources
+  VK_CHECK(vkCreateCommandPool(_device, &commandPoolInfo, nullptr,
+                               &_immCommandPool));
+  VkCommandBufferAllocateInfo cmdAllocInfo =
+      vkinit::command_buffer_allocate_info(_immCommandPool, 1);
+  VK_CHECK(
+      vkAllocateCommandBuffers(_device, &cmdAllocInfo, &_immCommandBuffer));
+  _mainDeletionQueue.push_function(
+      [this]() { vkDestroyCommandPool(_device, _immCommandPool, nullptr); });
 }
 void VulkanEngine::init_sync_structures() {
   VkFenceCreateInfo fenceCreateInfo =
@@ -368,6 +468,10 @@ void VulkanEngine::init_sync_structures() {
     VK_CHECK(vkCreateSemaphore(_device, &semaphoreCreateInfo, nullptr,
                                &renderCompleteSemaphores[i]));
   }
+  // Immediates now
+  VK_CHECK(vkCreateFence(_device, &fenceCreateInfo, nullptr, &_immFence));
+  _mainDeletionQueue.push_function(
+      [this]() { vkDestroyFence(_device, _immFence, nullptr); });
 }
 
 void VulkanEngine::init_descriptors() {
@@ -488,8 +592,8 @@ void VulkanEngine::init_background_pipeline() {
 
   VkShaderModule computeDrawShader;
   // TODO: Load this properly?
-  if (!vkutil::load_shader_module("../../assets/shaders/gradient.comp.spv", _device,
-                                  &computeDrawShader)) {
+  if (!vkutil::load_shader_module("../../assets/shaders/gradient.comp.spv",
+                                  _device, &computeDrawShader)) {
     fmt::print("Error when building the compute shader \n");
   }
 
@@ -595,4 +699,30 @@ void VulkanEngine::destroy_swapchain() {
 }
 
 //> Initializations
+
+void VulkanEngine::immediate_submit(
+    std::function<void(VkCommandBuffer cmd)>&& function) {
+  VK_CHECK(vkResetFences(_device, 1, &_immFence));
+  VK_CHECK(vkResetCommandBuffer(_immCommandBuffer, 0));
+
+  VkCommandBuffer cmd = _immCommandBuffer;
+
+  VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(
+      VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+  VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
+
+  function(cmd);
+
+  VK_CHECK(vkEndCommandBuffer(cmd));
+
+  VkCommandBufferSubmitInfo cmdinfo = vkinit::command_buffer_submit_info(cmd);
+  VkSubmitInfo2 submit = vkinit::submit_info(&cmdinfo, nullptr, nullptr);
+
+  // submit command buffer to the queue and execute it.
+  //  _renderFence will now block until the graphic commands finish execution
+  VK_CHECK(vkQueueSubmit2(_graphicsQueue, 1, &submit, _immFence));
+
+  VK_CHECK(vkWaitForFences(_device, 1, &_immFence, true, 9999999999));
+}
 //

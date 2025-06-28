@@ -67,11 +67,26 @@ class VulkanEngine : public RenderEngine {
   void init_background_pipeline();
   void init_default_pipeline();
 
+  // Immediates
+  VkFence _immFence;
+  VkCommandBuffer _immCommandBuffer;
+  VkCommandPool _immCommandPool;
+
+  void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
+
+  // Swapchain
   VkSwapchainKHR _swapchain;
   VkFormat _swapchainImageFormat;
 
   void create_swapchain(uint32_t width, uint32_t height);
   void destroy_swapchain();
+
+  // Buffer management
+  AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage,
+                                VmaMemoryUsage memoryUsage);
+  void destroy_buffer(const AllocatedBuffer& buffer);
+  GPUMeshBuffers uploadMesh(std::span<uint32_t> indices,
+                            std::span<Vertex> vertices);
 
   std::vector<VkImage> _swapchainImages;
   std::vector<VkImageView> _swapchainImageViews;

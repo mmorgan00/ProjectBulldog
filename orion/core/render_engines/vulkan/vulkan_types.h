@@ -26,6 +26,34 @@ struct AllocatedImage {
   VkFormat imageFormat;
 };
 
+// Handle for an allocated buffer on GPU
+struct AllocatedBuffer {
+  VkBuffer buffer;           // The actual buffer
+  VmaAllocation allocation;  // Memory allocation, needed for cleanup
+  VmaAllocationInfo info;    // Allocation metadata, needed for cleanup
+};
+
+struct Vertex {
+  glm::vec3 position;
+  float uv_x;
+  glm::vec3 normal;
+  float uv_y;
+  glm::vec4 color;
+};
+
+// holds the resources needed for a mesh
+struct GPUMeshBuffers {
+  AllocatedBuffer indexBuffer;
+  AllocatedBuffer vertexBuffer;
+  VkDeviceAddress vertexBufferAddress;
+};
+
+// push constants for our mesh object draws
+struct GPUDrawPushConstants {
+  glm::mat4 worldMatrix;
+  VkDeviceAddress vertexBuffer;
+};
+
 DECLARE_LOG_CATEGORY(VULKAN_VALIDATION)
 
 #define VK_CHECK(x)                                                 \
