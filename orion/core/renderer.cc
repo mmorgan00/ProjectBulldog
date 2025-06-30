@@ -42,7 +42,7 @@ void Renderer::loadScene(std::string sceneName) {
       fmt::format("../../scenes/{}.json", sceneName));
   simdjson::ondemand::document config = parser.iterate(json);
   try {
-    OE_LOG(RENDERER, INFO, "Loaded scene with BG {}",
+    OE_LOG(RENDERER, INFO, "Loaded scene with BG type {}",
            config["background"]["type"].get_string().value());
   } catch (std::exception e) {
     OE_LOG(RENDERER, INFO, "Failed to load scene!");

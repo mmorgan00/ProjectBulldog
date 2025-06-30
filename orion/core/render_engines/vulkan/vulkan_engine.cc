@@ -38,6 +38,7 @@ bool VulkanEngine::init(app_state& state) {
   init_sync_structures();
   init_descriptors();
   init_pipelines();
+  init_default_data();
   _isInitialized = true;
   return true;
 }
@@ -121,8 +122,16 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
 
   vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-  // launch a draw command to draw 3 vertices
-  vkCmdDraw(cmd, 3, 1, 0, 0);
+  GPUDrawPushConstants push_constants;
+  push_constants.worldMatrix = glm::mat4{1.f};  // identity for now
+  push_constants.vertexBuffer = rectangle.vertexBufferAddress;
+
+  vkCmdPushConstants(cmd, _defaultPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+                     sizeof(GPUDrawPushConstants), &push_constants);
+  vkCmdBindIndexBuffer(cmd, rectangle.indexBuffer.buffer, 0,
+                       VK_INDEX_TYPE_UINT32);
+
+  vkCmdDrawIndexed(cmd, 6, 1, 0, 0, 0);
 
   vkCmdEndRendering(cmd);
 }
@@ -318,7 +327,8 @@ GPUMeshBuffers VulkanEngine::uploadMesh(std::span<uint32_t> indices,
   // copy vertex buffer
   memcpy(data, vertices.data(), vertexBufferSize);
   // copy index buffer
-  memcpy(reinterpret_cast<char*>(data) + vertexBufferSize, indices.data(), indexBufferSize);
+  memcpy(reinterpret_cast<char*>(data) + vertexBufferSize, indices.data(),
+         indexBufferSize);
 
   immediate_submit([&](VkCommandBuffer cmd) {
     VkBufferCopy vertexCopy{0};
@@ -527,7 +537,7 @@ void VulkanEngine::init_pipelines() {
 
 void VulkanEngine::init_default_pipeline() {
   VkShaderModule vertShader;
-  if (!vkutil::load_shader_module("../../assets/shaders/default.vert.spv",
+  if (!vkutil::load_shader_module("../../assets/shaders/default_mesh.vert.spv",
                                   _device, &vertShader)) {
     OE_LOG(VULKAN_ENGINE, FATAL,
            "Failed to load default pipeline fragment shader");
@@ -538,8 +548,17 @@ void VulkanEngine::init_default_pipeline() {
     OE_LOG(VULKAN_ENGINE, FATAL,
            "Failed to load default pipeline fragment shader");
   }
+  // Push constants
+  VkPushConstantRange bufferRange{};
+  bufferRange.offset = 0;
+  bufferRange.size = sizeof(GPUDrawPushConstants);
+  bufferRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
   VkPipelineLayoutCreateInfo pipeline_layout_info =
       vkinit::pipeline_layout_create_info();
+  pipeline_layout_info.pPushConstantRanges = &bufferRange;
+  pipeline_layout_info.pushConstantRangeCount = 1;
+
   VK_CHECK(vkCreatePipelineLayout(_device, &pipeline_layout_info, nullptr,
                                   &_defaultPipelineLayout));
 
@@ -620,6 +639,38 @@ void VulkanEngine::init_background_pipeline() {
   _mainDeletionQueue.push_function([&]() {
     vkDestroyPipelineLayout(_device, _gradientPipelineLayout, nullptr);
     vkDestroyPipeline(_device, _gradientPipeline, nullptr);
+  });
+}
+
+void VulkanEngine::init_default_data() {
+  std::array<Vertex, 4> rect_vertices;
+
+  rect_vertices[0].position = {0.5, -0.5, 0};
+  rect_vertices[1].position = {0.5, 0.5, 0};
+  rect_vertices[2].position = {-0.5, -0.5, 0};
+  rect_vertices[3].position = {-0.5, 0.5, 0};
+
+  rect_vertices[0].color = {0, 0, 0, 1};
+  rect_vertices[1].color = {0.5, 0.5, 0.5, 1};
+  rect_vertices[2].color = {1, 0, 0, 1};
+  rect_vertices[3].color = {0, 1, 0, 1};
+
+  std::array<uint32_t, 6> rect_indices;
+
+  rect_indices[0] = 0;
+  rect_indices[1] = 1;
+  rect_indices[2] = 2;
+
+  rect_indices[3] = 2;
+  rect_indices[4] = 1;
+  rect_indices[5] = 3;
+
+  rectangle = uploadMesh(rect_indices, rect_vertices);
+
+  // delete the rectangle data on engine shutdown
+  _mainDeletionQueue.push_function([&]() {
+    destroy_buffer(rectangle.indexBuffer);
+    destroy_buffer(rectangle.vertexBuffer);
   });
 }
 

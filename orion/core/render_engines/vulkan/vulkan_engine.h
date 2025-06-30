@@ -66,6 +66,10 @@ class VulkanEngine : public RenderEngine {
   void init_pipelines();
   void init_background_pipeline();
   void init_default_pipeline();
+  void init_default_data();
+
+  // Default data
+  GPUMeshBuffers rectangle;
 
   // Immediates
   VkFence _immFence;
