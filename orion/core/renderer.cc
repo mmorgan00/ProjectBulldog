@@ -6,7 +6,6 @@
 #include <string>
 
 #include "core/render_engines/vulkan/vulkan_engine.h"
-#include "core/render_engine.h"
 #include "util/logger.h"
 
 void Renderer::init(app_state &state) {

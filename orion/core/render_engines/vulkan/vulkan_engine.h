@@ -2,7 +2,7 @@
 
 #ifndef ORION_CORE_RENDER_ENGINES_VULKAN_VULKAN_ENGINE_H_
 #define ORION_CORE_RENDER_ENGINES_VULKAN_VULKAN_ENGINE_H_
-#include <core/render_engine.h>
+#include <core/renderer.h>
 #include <vulkan/vulkan_core.h>
 
 #include <vector>

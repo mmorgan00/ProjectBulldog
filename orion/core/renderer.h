@@ -3,12 +3,12 @@
 #ifndef ORION_CORE_RENDERER_H_
 #define ORION_CORE_RENDERER_H_
 
-#include <render_engine.h>
-
 #include <memory>
 #include <string>
+#include "core/engine_types.h"
 
 class RenderComponent;
+class RenderEngine;
 
 class Renderer {
  public:
@@ -37,6 +37,18 @@ class Renderer {
 
  private:
   std::shared_ptr<RenderEngine> engine;
+};
+
+class RenderEngine {
+ public:
+  /**
+   * @brief Initialize rendering resources, including render pipelines
+   */
+  virtual bool init(app_state& state) = 0;
+  virtual ~RenderEngine() = default;
+  virtual void loadScene() = 0;
+  virtual void draw() = 0;
+  virtual void cleanup() = 0;
 };
 
 class RenderComponent {
