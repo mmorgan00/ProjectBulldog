@@ -9,6 +9,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include <algorithm>
+#include <memory>
 #include <vector>
 
 #include "core/engine_types.h"
@@ -640,6 +641,11 @@ void VulkanEngine::init_background_pipeline() {
     vkDestroyPipelineLayout(_device, _gradientPipelineLayout, nullptr);
     vkDestroyPipeline(_device, _gradientPipeline, nullptr);
   });
+}
+
+std::shared_ptr<RenderComponent> VulkanEngine::loadObject() {
+  auto rc = std::make_shared<RenderComponent>(this);
+  return rc;
 }
 
 void VulkanEngine::init_default_data() {

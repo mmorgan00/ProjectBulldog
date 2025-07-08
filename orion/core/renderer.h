@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <string>
+
 #include "core/engine_types.h"
 
 class RenderComponent;
@@ -47,17 +48,18 @@ class RenderEngine {
   virtual bool init(app_state& state) = 0;
   virtual ~RenderEngine() = default;
   virtual void loadScene() = 0;
+  virtual std::shared_ptr<RenderComponent> loadObject() = 0;
   virtual void draw() = 0;
   virtual void cleanup() = 0;
 };
 
 class RenderComponent {
  public:
-  explicit RenderComponent(std::shared_ptr<RenderEngine> renderEngine);
+  explicit RenderComponent(RenderEngine* renderEngine);
   void setVisible();
 
  private:
-  std::shared_ptr<RenderEngine> engine;
+  RenderEngine* engine;
 };
 
 #endif  // ORION_CORE_RENDERER_H_

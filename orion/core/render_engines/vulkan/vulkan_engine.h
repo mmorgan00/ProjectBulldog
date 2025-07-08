@@ -6,6 +6,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include <vector>
+#include <memory>
 
 #include "core/engine_types.h"
 #include "core/render_engines/vulkan/vulkan_descriptors.h"
@@ -112,6 +113,7 @@ class VulkanEngine : public RenderEngine {
 
   bool init(app_state& state) override;
   void loadScene() override;
+  std::shared_ptr<RenderComponent> loadObject() override;
   // draw loop
   void draw() override;
   void draw_background(VkCommandBuffer cmd);

@@ -27,11 +27,9 @@ void Renderer::draw() {
 
 /**
  * @detail loads a single object outside of a scene graph
- * TODO: Hardcoded for a debug asset.
  */
 std::shared_ptr<RenderComponent> Renderer::loadObject() {
-  auto rc = std::make_shared<RenderComponent>(this->engine);
-  return rc;
+  return this->engine->loadObject();
 }
 
 void Renderer::cleanup() {
@@ -58,6 +56,6 @@ void Renderer::loadScene(std::string sceneName) {
 }
 
 // Render Component
-RenderComponent::RenderComponent(std::shared_ptr<RenderEngine> renderEngine) {
+RenderComponent::RenderComponent(RenderEngine* renderEngine) {
   this->engine = renderEngine;
 }
