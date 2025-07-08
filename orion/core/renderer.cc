@@ -6,7 +6,7 @@
 #include <string>
 
 #include "core/render_engines/vulkan/vulkan_engine.h"
-#include "fmt/format.h"
+#include "core/render_engine.h"
 #include "util/logger.h"
 
 void Renderer::init(app_state &state) {
@@ -24,6 +24,15 @@ void Renderer::init(app_state &state) {
 void Renderer::draw() {
   // TODO: Platform driven resize
   engine->draw();
+}
+
+/**
+ * @detail loads a single object outside of a scene graph
+ * TODO: Hardcoded for a debug asset.
+ */
+std::shared_ptr<RenderComponent> Renderer::loadObject() {
+  auto rc = std::make_shared<RenderComponent>(this->engine);
+  return rc;
 }
 
 void Renderer::cleanup() {
@@ -47,4 +56,9 @@ void Renderer::loadScene(std::string sceneName) {
   } catch (std::exception e) {
     OE_LOG(RENDERER, INFO, "Failed to load scene!");
   }
+}
+
+// Render Component
+RenderComponent::RenderComponent(std::shared_ptr<RenderEngine> renderEngine) {
+  this->engine = renderEngine;
 }
