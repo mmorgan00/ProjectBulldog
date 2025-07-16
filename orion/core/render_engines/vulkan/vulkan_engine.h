@@ -5,8 +5,8 @@
 #include <core/renderer.h>
 #include <vulkan/vulkan_core.h>
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 #include "core/engine_types.h"
 #include "core/render_engines/vulkan/vulkan_descriptors.h"

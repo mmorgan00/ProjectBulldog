@@ -13,10 +13,11 @@
 #include <vector>
 
 #include "core/engine_types.h"
-#include "orion/core/render_engines/vulkan/vulkan_images.h"
-#include "orion/core/render_engines/vulkan/vulkan_initializers.h"
-#include "orion/core/render_engines/vulkan/vulkan_pipelines.h"
-#include "orion/core/render_engines/vulkan/vulkan_types.h"
+#include "core/render_engines//vulkan/vulkan_loaders.h"
+#include "core/render_engines/vulkan/vulkan_images.h"
+#include "core/render_engines/vulkan/vulkan_initializers.h"
+#include "core/render_engines/vulkan/vulkan_pipelines.h"
+#include "core/render_engines/vulkan/vulkan_types.h"
 #include "util/logger.h"
 
 #define VMA_IMPLEMENTATION
