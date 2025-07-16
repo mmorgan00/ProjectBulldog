@@ -644,7 +644,13 @@ void VulkanEngine::init_background_pipeline() {
   });
 }
 
+/**
+ * @detail Creates a new object and registers it as a top level node in the
+ * current scene graph.
+ */
 std::shared_ptr<RenderComponent> VulkanEngine::loadObject() {
+  // Load from file
+  vkutil::loadMeshGLB(loadedEngine, "~/stuff.glb");
   auto rc = std::make_shared<RenderComponent>(this);
   return rc;
 }

@@ -18,6 +18,8 @@ add_executable(demo
   core/render_engines/vulkan/vulkan_descriptors.cc
   core/render_engines/vulkan/vulkan_pipelines.h
   core/render_engines/vulkan/vulkan_pipelines.cc
+  core/render_engines/vulkan/vulkan_loaders.h
+  core/render_engines/vulkan/vulkan_loaders.cc
 
 )
 

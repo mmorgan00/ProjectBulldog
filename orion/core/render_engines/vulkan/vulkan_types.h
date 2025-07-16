@@ -7,6 +7,21 @@
 #include <vk_mem_alloc.h>
 #include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vulkan.h>
+
+#include <string>
+#include <vector>
+
+/**
+ * @brief Scene graph
+ */
+typedef struct Scene {
+} Scene;
+
+/**
+ * @brief Scene node
+ */
+typedef struct SceneNode {
+} SceneNode;
 /**
  * @brief Holds the data specific to a single frame
  * @detail Includes command objects
@@ -42,10 +57,22 @@ struct Vertex {
 };
 
 // holds the resources needed for a mesh
+
 struct GPUMeshBuffers {
   AllocatedBuffer indexBuffer;
   AllocatedBuffer vertexBuffer;
   VkDeviceAddress vertexBufferAddress;
+};
+
+struct GeoSurface {
+  uint32_t startIndex;
+  uint32_t count;
+};
+
+struct MeshAsset {
+  std::string name;
+  std::vector<GeoSurface> surfaces;
+  GPUMeshBuffers meshBuffers;
 };
 
 // push constants for our mesh object draws
