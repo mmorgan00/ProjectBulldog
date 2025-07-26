@@ -4,6 +4,7 @@
 
 #include <utility>
 #include <vector>
+#include <filesystem>
 
 #include <fastgltf/core.hpp>
 #include <fastgltf/glm_element_traits.hpp>
@@ -122,6 +123,6 @@ meshes.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
 }
 **/
   }
-}
+
 return meshes;
 }

@@ -7,6 +7,8 @@
 #include "core/render_engines//vulkan/vulkan_engine.h"
 #include "core/render_engines/vulkan/vulkan_types.h"
 
+#include <filesystem>
+
 namespace vkutil {
 std::optional<std::vector<std::shared_ptr<MeshAsset>>> loadMeshGLB(
     VulkanEngine* engine, std::filesystem::path filePath);
