@@ -650,7 +650,8 @@ void VulkanEngine::init_background_pipeline() {
  */
 std::shared_ptr<RenderComponent> VulkanEngine::loadObject() {
   // Load from file
-  vkutil::loadMeshGLB(loadedEngine, "~/stuff.glb");
+  OE_LOG(VULKAN_ENGINE, INFO, "Loading object");
+  vkutil::loadMeshGLB(loadedEngine, "../../assets/basicmesh.glb");
   auto rc = std::make_shared<RenderComponent>(this);
   return rc;
 }

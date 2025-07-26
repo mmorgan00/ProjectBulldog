@@ -53,6 +53,7 @@ void Renderer::loadScene(std::string sceneName) {
   } catch (std::exception e) {
     OE_LOG(RENDERER, INFO, "Failed to load scene!");
   }
+  loadObject();
 }
 
 // Render Component
