@@ -90,9 +90,6 @@ class VulkanEngine : public RenderEngine {
   AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage,
                                 VmaMemoryUsage memoryUsage);
   void destroy_buffer(const AllocatedBuffer& buffer);
-  GPUMeshBuffers uploadMesh(std::span<uint32_t> indices,
-                            std::span<Vertex> vertices);
-
   std::vector<VkImage> _swapchainImages;
   std::vector<VkImageView> _swapchainImageViews;
   VkExtent2D _swapchainExtent;
@@ -120,5 +117,8 @@ class VulkanEngine : public RenderEngine {
   void draw_geometry(VkCommandBuffer cmd);
   // shuts down the engine
   void cleanup() override;
+
+  GPUMeshBuffers uploadMesh(std::span<uint32_t> indices,
+                            std::span<Vertex> vertices);
 };
 #endif  // ORION_CORE_RENDER_ENGINES_VULKAN_VULKAN_ENGINE_H_

@@ -2,14 +2,12 @@
 
 #include "orion/core/render_engines/vulkan/vulkan_loaders.h"
 
-#include <utility>
 #include <vector>
 #include <filesystem>
-
+#include <utility>
 #include <fastgltf/core.hpp>
 #include <fastgltf/glm_element_traits.hpp>
 #include <fastgltf/tools.hpp>
-
 
 #include "orion/util/logger.h"
 
@@ -48,7 +46,7 @@ std::optional<std::vector<std::shared_ptr<MeshAsset>>> vkutil::loadMeshGLB(
     indices.clear();
     vertices.clear();
 
-    for (auto&& p : mesh.primitives) {
+    for (fastgltf::Primitive& p : mesh.primitives) {
       GeoSurface newSurface;
       newSurface.startIndex = static_cast<uint32_t>(indices.size());
       newSurface.count = static_cast<uint32_t>(
@@ -71,58 +69,79 @@ std::optional<std::vector<std::shared_ptr<MeshAsset>>> vkutil::loadMeshGLB(
 
       // load vertex positions
       {
-        // fastgltf::Attribute* posAttribute = p.findAttribute("POSITION");
-        // if (posAttribute != p.attributes.end()) {
+        // findAttribute returns a iterator into the underlying vector of
+        // primitive attributes. Note that the glTF spec requires every
+        // primitive to have a POSITION, so it's perfectly valid to assert that
+        // positionIt is never nullptr.
+        auto positionIt = p.findAttribute("POSITION");
+        fastgltf::Accessor& positionaccessor =
+            gltf.accessors[positionIt->accessorIndex];
+
+        vertices.resize(vertices.size() + positionaccessor.count);
+
+        fastgltf::iterateAccessorWithIndex<glm::vec3>(
+            gltf, positionaccessor, [&](glm::vec3 v, size_t index) {
+              Vertex newvtx;
+              newvtx.position = v;
+              newvtx.normal = {1, 0, 0};
+              newvtx.color = glm::vec4{1.f};
+              newvtx.uv_x = 0;
+              newvtx.uv_y = 0;
+              vertices[initial_vtx + index] = newvtx;
+            });
+
+        OE_LOG(RENDERER, INFO, "NUM VERTS {}", vertices.size());
+      }
+      {
+        // load vertex normals
+        auto normals = p.findAttribute("NORMAL");
+        fastgltf::Accessor& normalAccessor =
+            gltf.accessors[normals->accessorIndex];
+
+        if (normals != p.attributes.end()) {
+          fastgltf::iterateAccessorWithIndex<glm::vec3>(
+              gltf, normalAccessor, [&](glm::vec3 v, size_t index) {
+                vertices[initial_vtx + index].normal = v;
+              });
+        }
+      }
+
+      /**
+      // load UVs
+      auto uv = p.findAttribute("TEXCOORD_0");
+      if (uv != p.attributes.end()) {
+        fastgltf::iterateAccessorWithIndex<glm::vec2>(
+            gltf, gltf.accessors[(*uv).second], [&](glm::vec2 v, size_t index)
+    { vertices[initial_vtx + index].uv_x = v.x; vertices[initial_vtx +
+    index].uv_y = v.y;
+            });
+      }
+
+      // load vertex colors
+      auto colors = p.findAttribute("COLOR_0");
+      if (colors != p.attributes.end()) {
+        fastgltf::iterateAccessorWithIndex<glm::vec4>(
+            gltf, gltf.accessors[(*colors).second],
+            [&](glm::vec4 v, size_t index) {
+              vertices[initial_vtx + index].color = v;
+            });
+      }
+      newmesh.surfaces.push_back(newSurface);
+    }
+    **/
+    }
+    // display the vertex normals
+    constexpr bool OverrideColors = true;
+    if (OverrideColors) {
+      for (Vertex& vtx : vertices) {
+        vtx.color = glm::vec4(vtx.normal, 1.f);
       }
     }
-    /**
-          }
+    // OE_LOG(RENDERER, INFO, "Uploading meshes");
+    // newmesh.meshBuffers = engine->uploadMesh(indices, vertices);
 
-  // load vertex normals
-  auto normals = p.findAttribute("NORMAL");
-  if (normals != p.attributes.end()) {
-    fastgltf::iterateAccessorWithIndex<glm::vec3>(
-        gltf, gltf.accessors[(*normals).second],
-        [&](glm::vec3 v, size_t index) {
-          vertices[initial_vtx + index].normal = v;
-        });
+    // meshes.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
   }
 
-  // load UVs
-  auto uv = p.findAttribute("TEXCOORD_0");
-  if (uv != p.attributes.end()) {
-    fastgltf::iterateAccessorWithIndex<glm::vec2>(
-        gltf, gltf.accessors[(*uv).second], [&](glm::vec2 v, size_t index) {
-          vertices[initial_vtx + index].uv_x = v.x;
-          vertices[initial_vtx + index].uv_y = v.y;
-        });
-  }
-
-  // load vertex colors
-  auto colors = p.findAttribute("COLOR_0");
-  if (colors != p.attributes.end()) {
-    fastgltf::iterateAccessorWithIndex<glm::vec4>(
-        gltf, gltf.accessors[(*colors).second],
-        [&](glm::vec4 v, size_t index) {
-          vertices[initial_vtx + index].color = v;
-        });
-  }
-  newmesh.surfaces.push_back(newSurface);
-}
-
-// display the vertex normals
-constexpr bool OverrideColors = true;
-if (OverrideColors) {
-  for (Vertex& vtx : vertices) {
-    vtx.color = glm::vec4(vtx.normal, 1.f);
-  }
-}
-newmesh.meshBuffers = engine->uploadMesh(indices, vertices);
-
-meshes.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
-}
-**/
-  }
-
-return meshes;
+  return meshes;
 }
