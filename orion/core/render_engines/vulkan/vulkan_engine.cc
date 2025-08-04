@@ -134,6 +134,16 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
                        VK_INDEX_TYPE_UINT32);
 
   vkCmdDrawIndexed(cmd, 6, 1, 0, 0, 0);
+  // Draw meshes
+  push_constants.vertexBuffer = meshes[2]->meshBuffers.vertexBufferAddress;
+
+  vkCmdPushConstants(cmd, _defaultPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+                     sizeof(GPUDrawPushConstants), &push_constants);
+  vkCmdBindIndexBuffer(cmd, meshes[2]->meshBuffers.indexBuffer.buffer, 0,
+                       VK_INDEX_TYPE_UINT32);
+
+  vkCmdDrawIndexed(cmd, meshes[2]->surfaces[0].count, 1,
+                   meshes[2]->surfaces[0].startIndex, 0, 0);
 
   vkCmdEndRendering(cmd);
 }
@@ -425,6 +435,8 @@ void VulkanEngine::init_vulkan(app_state& state) {
   vmaCreateAllocator(&allocatorInfo, &_allocator);
 
   _mainDeletionQueue.push_function([&]() { vmaDestroyAllocator(_allocator); });
+
+  loadedEngine = this;
 }
 
 void VulkanEngine::init_commands() {
@@ -651,7 +663,10 @@ void VulkanEngine::init_background_pipeline() {
 std::shared_ptr<RenderComponent> VulkanEngine::loadObject() {
   // Load from file
   OE_LOG(VULKAN_ENGINE, INFO, "Loading object");
-  vkutil::loadMeshGLB(loadedEngine, "../../assets/basicmesh.glb");
+  // TODO: Needs to not be just an equals, but building nodes into a graph
+  meshes =
+      vkutil::loadMeshGLB(loadedEngine, "../../assets/basicmesh.glb").value();
+
   auto rc = std::make_shared<RenderComponent>(this);
   return rc;
 }

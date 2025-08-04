@@ -72,6 +72,7 @@ class VulkanEngine : public RenderEngine {
   // Default data
   GPUMeshBuffers rectangle;
 
+  std::vector<std::shared_ptr<MeshAsset>> meshes;
   // Immediates
   VkFence _immFence;
   VkCommandBuffer _immCommandBuffer;

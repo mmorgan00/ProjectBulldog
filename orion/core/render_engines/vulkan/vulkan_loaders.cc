@@ -2,13 +2,13 @@
 
 #include "orion/core/render_engines/vulkan/vulkan_loaders.h"
 
-#include <vector>
 #include <filesystem>
 #include <utility>
+#include <vector>
+
 #include <fastgltf/core.hpp>
 #include <fastgltf/glm_element_traits.hpp>
 #include <fastgltf/tools.hpp>
-
 #include "orion/util/logger.h"
 
 std::optional<std::vector<std::shared_ptr<MeshAsset>>> vkutil::loadMeshGLB(
@@ -126,9 +126,8 @@ std::optional<std::vector<std::shared_ptr<MeshAsset>>> vkutil::loadMeshGLB(
               vertices[initial_vtx + index].color = v;
             });
       }
+      **/
       newmesh.surfaces.push_back(newSurface);
-    }
-    **/
     }
     // display the vertex normals
     constexpr bool OverrideColors = true;
@@ -137,10 +136,10 @@ std::optional<std::vector<std::shared_ptr<MeshAsset>>> vkutil::loadMeshGLB(
         vtx.color = glm::vec4(vtx.normal, 1.f);
       }
     }
-    // OE_LOG(RENDERER, INFO, "Uploading meshes");
-    // newmesh.meshBuffers = engine->uploadMesh(indices, vertices);
+    OE_LOG(RENDERER, INFO, "Uploading meshes");
+    newmesh.meshBuffers = engine->uploadMesh(indices, vertices);
 
-    // meshes.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
+    meshes.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
   }
 
   return meshes;
