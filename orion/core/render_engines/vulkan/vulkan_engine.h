@@ -33,6 +33,7 @@ class VulkanEngine : public RenderEngine {
 
   //< Render loop resources
   AllocatedImage _drawImage;
+  AllocatedImage _depthImage;
   VkExtent2D _drawExtent;
   VkExtent2D _drawImageExtent;
   //> Render loop resources
