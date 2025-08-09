@@ -1,6 +1,10 @@
 find_package(Vulkan REQUIRED)
 find_package(simdjson REQUIRED)
 
+
+# For whatever reason this doesn't compile for me
+set(SDL_PIPEWIRE Off) 
+
 add_library(vkbootstrap STATIC)
 add_library(nlohmann INTERFACE)
 add_library(glm INTERFACE)
