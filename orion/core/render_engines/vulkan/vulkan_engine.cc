@@ -154,11 +154,8 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
 
   vkCmdPushConstants(cmd, _defaultPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                      sizeof(GPUDrawPushConstants), &push_constants);
-  vkCmdBindIndexBuffer(cmd, rectangle.indexBuffer.buffer, 0,
-                       VK_INDEX_TYPE_UINT32);
 
-  vkCmdDrawIndexed(cmd, 6, 1, 0, 0, 0);
-  // Draw meshes
+  // Draw meshes - Hardcoded to specific mesh
   push_constants.vertexBuffer = meshes[2]->meshBuffers.vertexBufferAddress;
 
   vkCmdPushConstants(cmd, _defaultPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
