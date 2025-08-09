@@ -35,6 +35,8 @@ class PipelineBuilder {
 
   void set_input_topology(VkPrimitiveTopology topology);
 
+  void enable_depthtest(bool depthWriteEnable, VkCompareOp op);
+
   void set_polygon_mode(VkPolygonMode mode);
 
   void set_cull_mode(VkCullModeFlags cullMode, VkFrontFace frontFace);
