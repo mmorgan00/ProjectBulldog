@@ -2,16 +2,16 @@
 
 #include "orion/core/render_engines/vulkan/vulkan_engine.h"
 
-#include <vulkan/vulkan_core.h>
-#include <fmt/printf.h>
-#include <memory>
-#include <vector>
-#include <algorithm>
 #include <SDL.h>
 #include <SDL_vulkan.h>
 #include <VkBootstrap.h>
+#include <fmt/printf.h>
+#include <vulkan/vulkan_core.h>
 
+#include <algorithm>
 #include <glm/gtx/transform.hpp>
+#include <memory>
+#include <vector>
 
 #include "core/engine_types.h"
 #include "core/render_engines//vulkan/vulkan_loaders.h"
@@ -614,8 +614,10 @@ void VulkanEngine::init_default_pipeline() {
   pipelineBuilder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
   // no multisampling
   pipelineBuilder.set_multisampling_none();
-  // no blending
+
   pipelineBuilder.disable_blending();
+  // pipelineBuilder.enable_blending_additive();
+  // pipelineBuilder.enable_blending_alphablend();
 
   // pipelineBuilder.disable_depthtest();
   pipelineBuilder.enable_depthtest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
@@ -794,7 +796,7 @@ void VulkanEngine::init_swapchain() {
   depthImageUsages |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
   VkImageCreateInfo dimg_info = vkinit::image_create_info(
-     _depthImage.imageFormat, depthImageUsages, drawImageExtent);
+      _depthImage.imageFormat, depthImageUsages, drawImageExtent);
 
   // allocate and create the image
   vmaCreateImage(_allocator, &dimg_info, &rimg_allocinfo, &_depthImage.image,
