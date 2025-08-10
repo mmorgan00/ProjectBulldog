@@ -8,7 +8,7 @@
 #include "core/render_engines/vulkan/vulkan_engine.h"
 #include "util/logger.h"
 
-void Renderer::init(app_state &state) {
+void Renderer::init(app_state& state) {
   if (state.graphicsAPI == "Vulkan") {
     engine = std::make_unique<VulkanEngine>();
     engine->init(state);
@@ -20,10 +20,9 @@ void Renderer::init(app_state &state) {
   }
 }
 
-void Renderer::draw() {
-  // TODO: Platform driven resize
-  engine->draw();
-}
+void Renderer::resize_window() { engine->resize_window(); }
+
+void Renderer::draw() { engine->draw(); }
 
 /**
  * @detail loads a single object outside of a scene graph

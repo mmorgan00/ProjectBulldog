@@ -18,7 +18,7 @@ class VulkanEngine : public RenderEngine {
   bool _isInitialized{false};
   int _frameNumber{0};
   bool stop_rendering{false};
-  VkExtent2D _windowExtent{1700, 900};
+  VkExtent2D _windowExtent{2580, 1600};
   // To select the correct sync and command objects, we need to keep track of
   // the current frame and (swapchain) image index
   uint32_t currentFrame{0};
@@ -62,6 +62,7 @@ class VulkanEngine : public RenderEngine {
 
   void init_vulkan(app_state& state);
   void init_swapchain();
+  void resize_swapchain();
   void init_commands();
   void init_sync_structures();
   void init_descriptors();
@@ -97,6 +98,7 @@ class VulkanEngine : public RenderEngine {
   VkExtent2D _swapchainExtent;
 
  public:
+  bool resize_requested{false};
   // Descriptor sets
   DescriptorAllocator globalDescriptorAllocator;
 
@@ -113,6 +115,8 @@ class VulkanEngine : public RenderEngine {
   bool init(app_state& state) override;
   void loadScene() override;
   std::shared_ptr<RenderComponent> loadObject() override;
+
+  void resize_window() override;
   // draw loop
   void draw() override;
   void draw_background(VkCommandBuffer cmd);

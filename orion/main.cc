@@ -4,6 +4,8 @@
 #include <thread>
 
 #include "SDL.h"
+#include "SDL_events.h"
+#include "SDL_video.h"
 #include "core/engine_types.h"
 #include "core/renderer.h"
 #include "orion/entry.h"
@@ -31,6 +33,7 @@ int main(int argc, char *argv[]) {
   // Main loop
   bool bQuit = false;
   bool bStopRunning = false;
+  bool resize_requested = false;
   SDL_Event e;
   while (!bQuit) {
     // Handle events on queue
@@ -53,6 +56,9 @@ int main(int argc, char *argv[]) {
         if (e.window.event == SDL_WINDOWEVENT_RESTORED) {
           bStopRunning = false;
         }
+        if (e.window.event == SDL_WINDOWEVENT_RESIZED) {
+          resize_requested = true;
+        }
       }
 
       if (bStopRunning) {
@@ -64,6 +70,12 @@ int main(int argc, char *argv[]) {
       // TODO: Proper tick loop -> should be endless loop until quit signal
       // recevied
     }
+    if (resize_requested) {
+      renderer.resize_window();
+      resize_requested = false;
+      continue;  // skip the draw call this frame
+    }
+
     renderer.draw();
   }
 

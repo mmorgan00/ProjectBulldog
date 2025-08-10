@@ -13,6 +13,7 @@
 #include <memory>
 #include <vector>
 
+#include "SDL_video.h"
 #include "core/engine_types.h"
 #include "core/render_engines//vulkan/vulkan_loaders.h"
 #include "core/render_engines/vulkan/vulkan_images.h"
@@ -30,7 +31,8 @@ bool VulkanEngine::init(app_state& state) {
   // We initialize SDL and create a window with it.
   SDL_Init(SDL_INIT_VIDEO);
 
-  SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN);
+  SDL_WindowFlags window_flags =
+      (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
 
   _window = SDL_CreateWindow(state.appName.c_str(), SDL_WINDOWPOS_UNDEFINED,
                              SDL_WINDOWPOS_UNDEFINED, _windowExtent.width,
@@ -183,10 +185,15 @@ void VulkanEngine::draw() {
   //> draw_2
   // request image from the swapchain
   uint32_t swapchainImageIndex;
-  VK_CHECK(vkAcquireNextImageKHR(_device, _swapchain, 1000000000,
-                                 presentCompleteSemaphores[currentSemaphore],
-                                 nullptr, &swapchainImageIndex));
-  // Set our draw image size based on the image we obtained
+
+  VkResult e =
+      vkAcquireNextImageKHR(_device, _swapchain, 1000000000,
+                            presentCompleteSemaphores[currentSemaphore],
+                            nullptr, &swapchainImageIndex);
+  if (e == VK_ERROR_OUT_OF_DATE_KHR) {
+    resize_requested = true;
+    return;
+  }  // Set our draw image size based on the image we obtained
   _drawExtent.height =
       std::min(_swapchainExtent.height, _drawImage.imageExtent.height);
   _drawExtent.width =
@@ -286,7 +293,10 @@ void VulkanEngine::draw() {
 
   presentInfo.pImageIndices = &swapchainImageIndex;
 
-  VK_CHECK(vkQueuePresentKHR(_graphicsQueue, &presentInfo));
+  VkResult presentResult = vkQueuePresentKHR(_graphicsQueue, &presentInfo);
+  if (presentResult == VK_ERROR_OUT_OF_DATE_KHR) {
+    resize_requested = true;
+  }
 
   // increase the number of frames drawn
   _frameNumber++;
@@ -753,6 +763,23 @@ void VulkanEngine::create_swapchain(uint32_t width, uint32_t height) {
   _swapchainImageViews = vkbSwapchain.get_image_views().value();
 }
 
+// Correlates to swapchain
+void VulkanEngine::resize_window() {
+  resize_swapchain();
+}
+void VulkanEngine::resize_swapchain() {
+  vkDeviceWaitIdle(_device);
+  destroy_swapchain();
+
+  int w, h;
+  SDL_GetWindowSize(_window, &w, &h);
+  _windowExtent.width = w;
+  _windowExtent.height = h;
+
+  create_swapchain(_windowExtent.width, _windowExtent.height);
+
+  loadedEngine->resize_requested = false;
+}
 void VulkanEngine::init_swapchain() {
   create_swapchain(_windowExtent.width, _windowExtent.height);
 

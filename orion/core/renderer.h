@@ -32,6 +32,11 @@ class Renderer {
   std::shared_ptr<RenderComponent> loadObject();
 
   /**
+   * @brief resize the window
+   */
+  void resize_window();
+
+  /**
    * @brief loads a scene by name
    */
   void loadScene(std::string sceneName);
@@ -51,6 +56,8 @@ class RenderEngine {
   virtual std::shared_ptr<RenderComponent> loadObject() = 0;
   virtual void draw() = 0;
   virtual void cleanup() = 0;
+  virtual void resize_window() = 0;
+  bool resize_requested{false};
 };
 
 class RenderComponent {
