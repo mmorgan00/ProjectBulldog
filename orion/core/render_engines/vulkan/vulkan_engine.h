@@ -14,6 +14,18 @@
 #include "util/logger.h"
 
 DECLARE_LOG_CATEGORY(VULKAN_ENGINE);
+
+
+struct GPUSceneData {
+    glm::mat4 view;
+    glm::mat4 proj;
+    glm::mat4 viewproj;
+    glm::vec4 ambientColor;
+    glm::vec4 sunlightDirection; // w for sun power
+    glm::vec4 sunlightColor;
+};
+
+
 class VulkanEngine : public RenderEngine {
   bool _isInitialized{false};
   int _frameNumber{0};
@@ -72,9 +84,12 @@ class VulkanEngine : public RenderEngine {
   void init_default_data();
 
   // Default data
-  GPUMeshBuffers rectangle;
-
   std::vector<std::shared_ptr<MeshAsset>> meshes;
+
+  GPUSceneData sceneData;
+
+  VkDescriptorSetLayout _gpuSceneDataDescriptorLayout;
+
   // Immediates
   VkFence _immFence;
   VkCommandBuffer _immCommandBuffer;

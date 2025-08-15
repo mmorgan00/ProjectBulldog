@@ -11,6 +11,8 @@
 #include <string>
 #include <vector>
 
+#include "render_engines/vulkan/vulkan_descriptors.h"
+
 /**
  * @brief Scene graph
  */
@@ -31,6 +33,7 @@ typedef struct FrameData {
   VkCommandBuffer _mainCommandBuffer;
   VkFence _renderFence;
   DeletionQueue _deletionQueue;
+  DynamicDescriptorAllocator _frameDescriptors;
 } FrameData;
 
 struct AllocatedImage {
