@@ -15,16 +15,14 @@
 
 DECLARE_LOG_CATEGORY(VULKAN_ENGINE);
 
-
 struct GPUSceneData {
-    glm::mat4 view;
-    glm::mat4 proj;
-    glm::mat4 viewproj;
-    glm::vec4 ambientColor;
-    glm::vec4 sunlightDirection; // w for sun power
-    glm::vec4 sunlightColor;
+  glm::mat4 view;
+  glm::mat4 proj;
+  glm::mat4 viewproj;
+  glm::vec4 ambientColor;
+  glm::vec4 sunlightDirection;  // w for sun power
+  glm::vec4 sunlightColor;
 };
-
 
 class VulkanEngine : public RenderEngine {
   bool _isInitialized{false};
@@ -85,10 +83,19 @@ class VulkanEngine : public RenderEngine {
 
   // Default data
   std::vector<std::shared_ptr<MeshAsset>> meshes;
+  AllocatedImage _whiteImage;
+  AllocatedImage _blackImage;
+  AllocatedImage _greyImage;
+  AllocatedImage _errorCheckerboardImage;
+
+  VkSampler _defaultSamplerLinear;
+  VkSampler _defaultSamplerNearest;
 
   GPUSceneData sceneData;
 
-  VkDescriptorSetLayout _gpuSceneDataDescriptorLayout;
+  // Layouts
+  VkDescriptorSetLayout _gpuSceneDataDescriptorLayout; // Generic layout
+  VkDescriptorSetLayout _singleImageDescriptorLayout; // Single Image input shader pipeline
 
   // Immediates
   VkFence _immFence;
@@ -111,6 +118,13 @@ class VulkanEngine : public RenderEngine {
   std::vector<VkImage> _swapchainImages;
   std::vector<VkImageView> _swapchainImageViews;
   VkExtent2D _swapchainExtent;
+
+  // Image management
+  AllocatedImage create_image(VkExtent3D size, VkFormat format,
+                              VkImageUsageFlags usage, bool mipmapped = false);
+  AllocatedImage create_image(void* data, VkExtent3D size, VkFormat format,
+                              VkImageUsageFlags usage, bool mipmapped = false);
+  void destroy_image(const AllocatedImage& img);
 
  public:
   bool resize_requested{false};

@@ -2,13 +2,13 @@
 
 #include "orion/core/render_engines/vulkan/vulkan_loaders.h"
 
+#include <fastgltf/core.hpp>
+#include <fastgltf/glm_element_traits.hpp>
+#include <fastgltf/tools.hpp>
 #include <filesystem>
 #include <utility>
 #include <vector>
 
-#include <fastgltf/core.hpp>
-#include <fastgltf/glm_element_traits.hpp>
-#include <fastgltf/tools.hpp>
 #include "orion/util/logger.h"
 
 std::optional<std::vector<std::shared_ptr<MeshAsset>>> vkutil::loadMeshGLB(
@@ -106,27 +106,28 @@ std::optional<std::vector<std::shared_ptr<MeshAsset>>> vkutil::loadMeshGLB(
         }
       }
 
-      /**
       // load UVs
       auto uv = p.findAttribute("TEXCOORD_0");
+      fastgltf::Accessor& uvAccessor = gltf.accessors[uv->accessorIndex];
+
       if (uv != p.attributes.end()) {
         fastgltf::iterateAccessorWithIndex<glm::vec2>(
-            gltf, gltf.accessors[(*uv).second], [&](glm::vec2 v, size_t index)
-    { vertices[initial_vtx + index].uv_x = v.x; vertices[initial_vtx +
-    index].uv_y = v.y;
+            gltf, uvAccessor, [&](glm::vec2 v, size_t index) {
+              vertices[initial_vtx + index].uv_x = v.x;
+              vertices[initial_vtx + index].uv_y = v.y;
             });
       }
-
-      // load vertex colors
-      auto colors = p.findAttribute("COLOR_0");
-      if (colors != p.attributes.end()) {
-        fastgltf::iterateAccessorWithIndex<glm::vec4>(
-            gltf, gltf.accessors[(*colors).second],
-            [&](glm::vec4 v, size_t index) {
-              vertices[initial_vtx + index].color = v;
-            });
-      }
-      **/
+      /**
+            // load vertex colors
+            auto colors = p.findAttribute("COLOR_0");
+            if (colors != p.attributes.end()) {
+              fastgltf::iterateAccessorWithIndex<glm::vec4>(
+                  gltf, gltf.accessors[(*colors).second],
+                  [&](glm::vec4 v, size_t index) {
+                    vertices[initial_vtx + index].color = v;
+                  });
+            }
+            **/
       newmesh.surfaces.push_back(newSurface);
     }
     // display the vertex normals
