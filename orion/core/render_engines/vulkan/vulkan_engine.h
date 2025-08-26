@@ -24,6 +24,40 @@ struct GPUSceneData {
   glm::vec4 sunlightColor;
 };
 
+class VulkanEngine;
+
+struct GLTFMetallic_Roughness {
+  MaterialPipeline opaquePipeline;
+  MaterialPipeline transparentPipeline;
+
+  VkDescriptorSetLayout materialLayout;
+
+  struct MaterialConstants {
+    glm::vec4 colorFactors;
+    glm::vec4 metal_rough_factors;
+    // padding, we need it anyway for uniform buffers
+    glm::vec4 extra[14];
+  };
+
+  struct MaterialResources {
+    AllocatedImage colorImage;
+    VkSampler colorSampler;
+    AllocatedImage metalRoughImage;
+    VkSampler metalRoughSampler;
+    VkBuffer dataBuffer;
+    uint32_t dataBufferOffset;
+  };
+
+  DescriptorWriter writer;
+
+  void build_pipelines(VulkanEngine* engine);
+  void clear_resources(VkDevice device);
+
+  MaterialInstance write_material(
+      VkDevice device, MaterialPass pass, const MaterialResources& resources,
+      DynamicDescriptorAllocator& descriptorAllocator);
+};
+
 class VulkanEngine : public RenderEngine {
   bool _isInitialized{false};
   int _frameNumber{0};
@@ -41,18 +75,10 @@ class VulkanEngine : public RenderEngine {
   VmaAllocator _allocator;
   //> Object managers
 
-  //< Render loop resources
-  AllocatedImage _drawImage;
-  AllocatedImage _depthImage;
-  VkExtent2D _drawExtent;
-  VkExtent2D _drawImageExtent;
-  //> Render loop resources
-
   //< Vk resource handles
   VkInstance _instance;                       // Vulkan library handle
   VkDebugUtilsMessengerEXT _debug_messenger;  // Vulkan debug output handle
   VkPhysicalDevice _chosenGPU;  // GPU chosen as the default device
-  VkDevice _device;             // Vulkan device for commands
   VkSurfaceKHR _surface;        // Vulkan window surface
                                 // > Vk Resource handles
   FrameData _frames[MAX_CONCURRENT_FRAMES];
@@ -93,10 +119,6 @@ class VulkanEngine : public RenderEngine {
 
   GPUSceneData sceneData;
 
-  // Layouts
-  VkDescriptorSetLayout _gpuSceneDataDescriptorLayout; // Generic layout
-  VkDescriptorSetLayout _singleImageDescriptorLayout; // Single Image input shader pipeline
-
   // Immediates
   VkFence _immFence;
   VkCommandBuffer _immCommandBuffer;
@@ -129,7 +151,7 @@ class VulkanEngine : public RenderEngine {
  public:
   bool resize_requested{false};
   // Descriptor sets
-  DescriptorAllocator globalDescriptorAllocator;
+  DynamicDescriptorAllocator globalDescriptorAllocator;
 
   VkDescriptorSet _drawImageDescriptors;
   VkDescriptorSetLayout _drawImageDescriptorLayout;
@@ -145,6 +167,24 @@ class VulkanEngine : public RenderEngine {
   void loadScene() override;
   std::shared_ptr<RenderComponent> loadObject() override;
 
+  VkDevice _device;  // Vulkan device for commands
+
+  //< Render loop resources
+  AllocatedImage _drawImage;
+  AllocatedImage _depthImage;
+  VkExtent2D _drawExtent;
+  VkExtent2D _drawImageExtent;
+  //> Render loop resources
+
+  MaterialInstance defaultData;
+  GLTFMetallic_Roughness metalRoughMaterial;
+
+  // Layouts
+  VkDescriptorSetLayout
+      _gpuSceneDataDescriptorLayout;  // Generic layout for any drawable object
+  VkDescriptorSetLayout
+      _singleImageDescriptorLayout;  // Single Image input shader pipeline
+
   void resize_window() override;
   // draw loop
   void draw() override;
@@ -156,4 +196,5 @@ class VulkanEngine : public RenderEngine {
   GPUMeshBuffers uploadMesh(std::span<uint32_t> indices,
                             std::span<Vertex> vertices);
 };
+
 #endif  // ORION_CORE_RENDER_ENGINES_VULKAN_VULKAN_ENGINE_H_

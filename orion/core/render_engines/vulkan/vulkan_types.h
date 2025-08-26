@@ -13,6 +13,29 @@
 
 #include "render_engines/vulkan/vulkan_descriptors.h"
 
+typedef enum MaterialPass : uint8_t {
+  MainColor,
+  Transparent,
+  Other
+} MaterialPass;
+
+struct MaterialPipeline {
+  VkPipeline pipeline;
+  VkPipelineLayout layout;
+};
+
+/**
+ * @brief Abstraction of a single material
+ * @param pipeline - the underlying draw pass needed
+ * @param materialSet - 'material payload' needed for draw
+ * @param passType - used for draw ordering
+ */
+struct MaterialInstance {
+  MaterialPipeline* pipeline;
+  VkDescriptorSet materialSet;
+  MaterialPass passType;
+};
+
 /**
  * @brief Scene graph
  */
