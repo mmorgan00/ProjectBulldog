@@ -1093,15 +1093,15 @@ void VulkanEngine::immediate_submit(
 //< GLTFMetallic_Roughness
 void GLTFMetallic_Roughness::build_pipelines(VulkanEngine* engine) {
   VkShaderModule meshFragShader;
-  if (!vkutil::load_shader_module("../../shaders/mesh.frag.spv",
+  if (!vkutil::load_shader_module("../../assets/shaders/mesh.frag.spv",
                                   engine->_device, &meshFragShader)) {
-    fmt::println("Error when building the triangle fragment shader module");
+    fmt::println("Error when building the mesh fragment shader module");
   }
 
   VkShaderModule meshVertexShader;
-  if (!vkutil::load_shader_module("../../shaders/mesh.vert.spv",
+  if (!vkutil::load_shader_module("../../assets/shaders/mesh.vert.spv",
                                   engine->_device, &meshVertexShader)) {
-    fmt::println("Error when building the triangle vertex shader module");
+    fmt::println("Error when building the mesh vertex shader module");
   }
 
   VkPushConstantRange matrixRange{};
