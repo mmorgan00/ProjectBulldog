@@ -7,6 +7,8 @@
 
 #include <memory>
 #include <vector>
+#include <string>
+#include <unordered_map>
 
 #include "core/engine_types.h"
 #include "core/render_engines/vulkan/vulkan_descriptors.h"
@@ -22,6 +24,27 @@ struct GPUSceneData {
   glm::vec4 ambientColor;
   glm::vec4 sunlightDirection;  // w for sun power
   glm::vec4 sunlightColor;
+};
+
+struct MeshNode : public Node {
+  std::shared_ptr<MeshAsset> mesh;
+
+  void Draw(const glm::mat4& topMatrix, DrawContext& ctx) override;
+};
+
+struct RenderObject {
+  uint32_t indexCount;
+  uint32_t firstIndex;
+  VkBuffer indexBuffer;
+
+  MaterialInstance* material;
+
+  glm::mat4 transform;
+  VkDeviceAddress vertexBufferAddress;
+};
+
+struct DrawContext {
+  std::vector<RenderObject> OpaqueSurfaces;
 };
 
 class VulkanEngine;
@@ -147,6 +170,11 @@ class VulkanEngine : public RenderEngine {
   AllocatedImage create_image(void* data, VkExtent3D size, VkFormat format,
                               VkImageUsageFlags usage, bool mipmapped = false);
   void destroy_image(const AllocatedImage& img);
+
+  DrawContext mainDrawContext;
+  std::unordered_map<std::string, std::shared_ptr<Node>> loadedNodes;
+
+  void update_scene();
 
  public:
   bool resize_requested{false};
