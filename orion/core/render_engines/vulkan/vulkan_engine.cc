@@ -104,6 +104,34 @@ void VulkanEngine::draw_background(VkCommandBuffer cmd) {
 }
 
 void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
+  VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(
+      _drawImage.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+  VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(
+      _depthImage.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
+  VkRenderingInfo renderInfo =
+      vkinit::rendering_info(_drawExtent, &colorAttachment, &depthAttachment);
+  vkCmdBeginRendering(cmd, &renderInfo);
+
+  // set dynamic viewport and scissor
+  VkViewport viewport = {};
+  viewport.x = 0;
+  viewport.y = 0;
+  viewport.width = _drawExtent.width;
+  viewport.height = _drawExtent.height;
+  viewport.minDepth = 0.f;
+  viewport.maxDepth = 1.f;
+
+  vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+  VkRect2D scissor = {};
+  scissor.offset.x = 0;
+  scissor.offset.y = 0;
+  scissor.extent.width = viewport.width;
+  scissor.extent.height = viewport.height;
+
+  vkCmdSetScissor(cmd, 0, 1, &scissor);
+
   // Allocate descriptor sets for this frame
   AllocatedBuffer gpuSceneDataBuffer =
       create_buffer(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -150,6 +178,7 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
 
     vkCmdDrawIndexed(cmd, draw.indexCount, 1, draw.firstIndex, 0, 0);
   }
+  vkCmdEndRendering(cmd);
 }
 
 void VulkanEngine::draw() {
