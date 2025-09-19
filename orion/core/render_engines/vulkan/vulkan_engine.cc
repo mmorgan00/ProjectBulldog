@@ -932,6 +932,8 @@ void VulkanEngine::init_default_data() {
       _device, MaterialPass::MainColor, materialResources,
       globalDescriptorAllocator);
 
+  meshes = vkutil::loadMeshGLB(this, "../../assets/basicmesh.glb").value();
+
   for (auto& m : meshes) {
     std::shared_ptr<MeshNode> newNode = std::make_shared<MeshNode>();
     newNode->mesh = m;
@@ -989,6 +991,13 @@ void VulkanEngine::update_scene() {
   sceneData.ambientColor = glm::vec4(.1f);
   sceneData.sunlightColor = glm::vec4(1.f);
   sceneData.sunlightDirection = glm::vec4(0, 1, 0.5, 1.f);
+
+  for (int x = -3; x < 3; x++) {
+    glm::mat4 scale = glm::scale(glm::vec3{0.2});
+    glm::mat4 translation = glm::translate(glm::vec3{x, 1, 0});
+
+    loadedNodes["Cube"]->Draw(translation * scale, mainDrawContext);
+  }
 }
 
 void VulkanEngine::create_swapchain(uint32_t width, uint32_t height) {
