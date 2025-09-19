@@ -9,9 +9,9 @@
 #include <vulkan/vulkan_core.h>
 
 #include <algorithm>
-#include <utility>
 #include <glm/gtx/transform.hpp>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "SDL_video.h"
@@ -649,7 +649,7 @@ void VulkanEngine::init_descriptors() {
       {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1},
       {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
       {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
-    };
+  };
 
   globalDescriptorAllocator.init(_device, 10, sizes);
 
@@ -725,17 +725,16 @@ void VulkanEngine::init_pipelines() {
 void VulkanEngine::init_default_pipeline() {
   //> mesh_shader
   VkShaderModule triangleFragShader;
-  if (!vkutil::load_shader_module("../../assets/shaders/default.frag.spv", _device,
-                                  &triangleFragShader)) {
+  if (!vkutil::load_shader_module("../../assets/shaders/default.frag.spv",
+                                  _device, &triangleFragShader)) {
     fmt::print("Error when building the fragment shader \n");
   } else {
     fmt::print("Triangle fragment shader succesfully loaded \n");
   }
 
   VkShaderModule triangleVertexShader;
-  if (!vkutil::load_shader_module(
-          "../../assets/shaders/default_mesh.vert.spv", _device,
-          &triangleVertexShader)) {
+  if (!vkutil::load_shader_module("../../assets/shaders/default_mesh.vert.spv",
+                                  _device, &triangleVertexShader)) {
     fmt::print("Error when building the vertex shader \n");
   } else {
     fmt::print("Triangle vertex shader succesfully loaded \n");
@@ -975,9 +974,11 @@ void VulkanEngine::update_scene() {
 
   sceneData.view = glm::translate(glm::vec3{0, 0, -5});
   // camera projection
-  sceneData.proj = glm::perspective(
-      glm::radians(70.f),
-      static_cast<float>(_windowExtent.width) / static_cast<float>(_windowExtent.height), 10000.f, 0.1f);
+  sceneData.proj =
+      glm::perspective(glm::radians(70.f),
+                       static_cast<float>(_windowExtent.width) /
+                           static_cast<float>(_windowExtent.height),
+                       10000.f, 0.1f);
 
   // invert the Y direction on projection matrix so that we are more similar
   // to opengl and gltf axis
