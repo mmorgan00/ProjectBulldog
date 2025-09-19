@@ -63,8 +63,6 @@ std::optional<std::vector<std::shared_ptr<MeshAsset>>> vkutil::loadMeshGLB(
         fastgltf::iterateAccessor<std::uint32_t>(
             gltf, indexaccessor,
             [&](std::uint32_t idx) { indices.push_back(idx + initial_vtx); });
-
-        OE_LOG(RENDERER, INFO, "NUM INDICIES {}", indices.size());
       }
 
       // load vertex positions
@@ -89,8 +87,6 @@ std::optional<std::vector<std::shared_ptr<MeshAsset>>> vkutil::loadMeshGLB(
               newvtx.uv_y = 0;
               vertices[initial_vtx + index] = newvtx;
             });
-
-        OE_LOG(RENDERER, INFO, "NUM VERTS {}", vertices.size());
       }
       {
         // load vertex normals
@@ -117,27 +113,26 @@ std::optional<std::vector<std::shared_ptr<MeshAsset>>> vkutil::loadMeshGLB(
               vertices[initial_vtx + index].uv_y = v.y;
             });
       }
-      /**
-            // load vertex colors
-            auto colors = p.findAttribute("COLOR_0");
-            if (colors != p.attributes.end()) {
-              fastgltf::iterateAccessorWithIndex<glm::vec4>(
-                  gltf, gltf.accessors[(*colors).second],
-                  [&](glm::vec4 v, size_t index) {
-                    vertices[initial_vtx + index].color = v;
-                  });
-            }
-            **/
+      // load vertex colors
+      auto colors = p.findAttribute("COLOR_0");
+      fastgltf::Accessor& colorAccessor = gltf.accessors[colors->accessorIndex];
+
+      if (colors != p.attributes.end()) {
+        fastgltf::iterateAccessorWithIndex<glm::vec4>(
+            gltf, colorAccessor, [&](glm::vec4 v, size_t index) {
+              vertices[initial_vtx + index].color = v;
+            });
+      }
+
       newmesh.surfaces.push_back(newSurface);
     }
     // display the vertex normals
-    constexpr bool OverrideColors = true;
+    constexpr bool OverrideColors = false;
     if (OverrideColors) {
       for (Vertex& vtx : vertices) {
         vtx.color = glm::vec4(vtx.normal, 1.f);
       }
     }
-    OE_LOG(RENDERER, INFO, "Uploading meshes");
     newmesh.meshBuffers = engine->uploadMesh(indices, vertices);
 
     meshes.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
