@@ -21,13 +21,24 @@ int main(int argc, char *argv[]) {
   simdjson::ondemand::document config = parser.iterate(json);
 
   state.build(config);
+
+  Camera mainCamera;
+
+  mainCamera.velocity = glm::vec3(0.f);
+  mainCamera.position = glm::vec3(0, 0, 5);
+
+  mainCamera.pitch = 0;
+  mainCamera.yaw = 0;
+
   OE_LOG(ORION, INFO, "{}", std::string(state.appName));
   OE_LOG(ORION, INFO, "Running using {}", std::string(config["graphicsAPI"]));
   // Init modules
   Renderer renderer;
   renderer.init(state);
+  renderer.set_camera(&mainCamera);
   // Call game initialization
   init();
+
   renderer.loadScene("demo");
 
   // Main loop
@@ -41,6 +52,7 @@ int main(int argc, char *argv[]) {
       // close the window when user alt-f4s or clicks the X button
       if (e.type == SDL_QUIT) bQuit = true;
 
+      mainCamera.handleInputEvent(e);
       // Handle keypress
       if (e.type == SDL_KEYDOWN) {
         // Another way to quit
