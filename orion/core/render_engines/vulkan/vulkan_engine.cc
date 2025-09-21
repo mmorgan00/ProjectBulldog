@@ -50,6 +50,8 @@ bool VulkanEngine::init(app_state& state) {
   return true;
 }
 
+void VulkanEngine::set_camera(Camera* camera) { mainCamera = camera; }
+
 void VulkanEngine::cleanup() {
   if (_isInitialized) {
     vkDeviceWaitIdle(_device);
@@ -970,11 +972,13 @@ void MeshNode::Draw(const glm::mat4& topMatrix, DrawContext& ctx) {
 }
 
 void VulkanEngine::update_scene() {
+  mainCamera->update();
+
   mainDrawContext.OpaqueSurfaces.clear();
 
   loadedNodes["Suzanne"]->Draw(glm::mat4{1.f}, mainDrawContext);
 
-  sceneData.view = glm::translate(glm::vec3{0, 0, -5});
+  sceneData.view = mainCamera->getViewMatrix();
   // camera projection
   sceneData.proj =
       glm::perspective(glm::radians(70.f),

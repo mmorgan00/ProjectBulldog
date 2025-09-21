@@ -2,6 +2,8 @@
 
 #include "core/renderer.h"
 
+#include <entity/camera.h>
+
 #include <memory>
 #include <string>
 
@@ -24,6 +26,7 @@ void Renderer::resize_window() { engine->resize_window(); }
 
 void Renderer::draw() { engine->draw(); }
 
+void Renderer::set_camera(Camera* camera) { engine->set_camera(camera); }
 /**
  * @detail loads a single object outside of a scene graph
  */

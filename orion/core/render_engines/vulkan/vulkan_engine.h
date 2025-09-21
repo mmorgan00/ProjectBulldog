@@ -10,6 +10,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "entity/camera.h"
 #include "core/engine_types.h"
 #include "core/render_engines/vulkan/vulkan_descriptors.h"
 #include "core/render_engines/vulkan/vulkan_types.h"
@@ -130,6 +131,8 @@ class VulkanEngine : public RenderEngine {
   void init_default_pipeline();
   void init_default_data();
 
+  void set_camera(Camera* camera) override;
+
   // Default data
   std::vector<std::shared_ptr<MeshAsset>> meshes;
   AllocatedImage _whiteImage;
@@ -141,6 +144,8 @@ class VulkanEngine : public RenderEngine {
   VkSampler _defaultSamplerNearest;
 
   GPUSceneData sceneData;
+
+  Camera* mainCamera;
 
   // Immediates
   VkFence _immFence;
