@@ -13,6 +13,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <string>
 
 #include "SDL_video.h"
 #include "core/engine_types.h"
@@ -181,6 +182,8 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
     vkCmdDrawIndexed(cmd, draw.indexCount, 1, draw.firstIndex, 0, 0);
   }
   vkCmdEndRendering(cmd);
+  // we delete the draw commands now that we processed them
+  mainDrawContext.OpaqueSurfaces.clear();
 }
 
 void VulkanEngine::draw() {
@@ -934,20 +937,58 @@ void VulkanEngine::init_default_data() {
       _device, MaterialPass::MainColor, materialResources,
       globalDescriptorAllocator);
 
-  meshes = vkutil::loadMeshGLB(this, "../../assets/basicmesh.glb").value();
+  // meshes = vkutil::loadMeshGLB(this, "../../assets/basicmesh.glb").value();
 
-  for (auto& m : meshes) {
-    std::shared_ptr<MeshNode> newNode = std::make_shared<MeshNode>();
-    newNode->mesh = m;
+  // for (auto& m : meshes) {
+  //   std::shared_ptr<MeshNode> newNode = std::make_shared<MeshNode>();
+  //   newNode->mesh = m;
 
-    newNode->localTransform = glm::mat4{1.f};
-    newNode->worldTransform = glm::mat4{1.f};
+  //   newNode->localTransform = glm::mat4{1.f};
+  //   newNode->worldTransform = glm::mat4{1.f};
 
-    for (auto& s : newNode->mesh->surfaces) {
-      s.material = std::make_shared<GLTFMaterial>(defaultData);
+  //   for (auto& s : newNode->mesh->surfaces) {
+  //     s.material = std::make_shared<GLTFMaterial>(defaultData);
+  //   }
+
+  //   loadedNodes[m->name] = std::move(newNode);
+  // }
+
+  std::string structurePath = {"../../assets/structure_mat.glb"};
+  auto structureFile = vkutil::loadGltfBinary(this, structurePath);
+
+  assert(structureFile.has_value());
+
+  loadedScenes["structure"] = *structureFile;
+}
+
+void LoadedGLTF::Draw(const glm::mat4& topMatrix, DrawContext& ctx) {
+  // create renderables from the scenenodes
+  for (auto& n : topNodes) {
+    n->Draw(topMatrix, ctx);
+  }
+}
+
+void LoadedGLTF::clearAll() {
+  VkDevice dv = creator->_device;
+
+  descriptorPool.destroy_pools(dv);
+  creator->destroy_buffer(materialDataBuffer);
+
+  for (auto& [k, v] : meshes) {
+    creator->destroy_buffer(v->meshBuffers.indexBuffer);
+    creator->destroy_buffer(v->meshBuffers.vertexBuffer);
+  }
+
+  for (auto& [k, v] : images) {
+    if (v.image == creator->_errorCheckerboardImage.image) {
+      // dont destroy the default images
+      continue;
     }
+    creator->destroy_image(v);
+  }
 
-    loadedNodes[m->name] = std::move(newNode);
+  for (auto& sampler : samplers) {
+    vkDestroySampler(dv, sampler, nullptr);
   }
 }
 
@@ -975,8 +1016,12 @@ void VulkanEngine::update_scene() {
   mainCamera->update();
 
   mainDrawContext.OpaqueSurfaces.clear();
+  vkDeviceWaitIdle(_device);
 
-  loadedNodes["Suzanne"]->Draw(glm::mat4{1.f}, mainDrawContext);
+  // loadedScenes.clear();
+
+  // loadedNodes["Suzanne"]->Draw(glm::mat4{1.f}, mainDrawContext);
+  loadedScenes["structure"]->Draw(glm::mat4{1.f}, mainDrawContext);
 
   sceneData.view = mainCamera->getViewMatrix();
   // camera projection
@@ -995,13 +1040,6 @@ void VulkanEngine::update_scene() {
   sceneData.ambientColor = glm::vec4(.1f);
   sceneData.sunlightColor = glm::vec4(1.f);
   sceneData.sunlightDirection = glm::vec4(0, 1, 0.5, 1.f);
-
-  for (int x = -3; x < 3; x++) {
-    glm::mat4 scale = glm::scale(glm::vec3{0.2});
-    glm::mat4 translation = glm::translate(glm::vec3{x, 1, 0});
-
-    loadedNodes["Cube"]->Draw(translation * scale, mainDrawContext);
-  }
 }
 
 void VulkanEngine::create_swapchain(uint32_t width, uint32_t height) {

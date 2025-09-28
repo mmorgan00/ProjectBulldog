@@ -3,7 +3,6 @@
 #include <string>
 #include <thread>
 
-#include "SDL.h"
 #include "SDL_events.h"
 #include "SDL_video.h"
 #include "core/engine_types.h"
@@ -25,7 +24,7 @@ int main(int argc, char *argv[]) {
   Camera mainCamera;
 
   mainCamera.velocity = glm::vec3(0.f);
-  mainCamera.position = glm::vec3(0, 0, 5);
+  mainCamera.position = glm::vec3(30.f, -00.f, -085.f);
 
   mainCamera.pitch = 0;
   mainCamera.yaw = 0;
@@ -39,7 +38,7 @@ int main(int argc, char *argv[]) {
   // Call game initialization
   init();
 
-  renderer.loadScene("demo");
+  // renderer.loadScene("demo");
 
   // Main loop
   bool bQuit = false;

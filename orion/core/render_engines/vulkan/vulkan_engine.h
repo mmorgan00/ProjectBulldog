@@ -6,14 +6,14 @@
 #include <vulkan/vulkan_core.h>
 
 #include <memory>
-#include <vector>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
-#include "entity/camera.h"
 #include "core/engine_types.h"
 #include "core/render_engines/vulkan/vulkan_descriptors.h"
 #include "core/render_engines/vulkan/vulkan_types.h"
+#include "entity/camera.h"
 #include "util/logger.h"
 
 DECLARE_LOG_CATEGORY(VULKAN_ENGINE);
@@ -82,6 +82,8 @@ struct GLTFMetallic_Roughness {
       DynamicDescriptorAllocator& descriptorAllocator);
 };
 
+class LoadedGLTF;  // Engine needs to know about it for storing. Declared later
+
 class VulkanEngine : public RenderEngine {
   bool _isInitialized{false};
   int _frameNumber{0};
@@ -135,13 +137,6 @@ class VulkanEngine : public RenderEngine {
 
   // Default data
   std::vector<std::shared_ptr<MeshAsset>> meshes;
-  AllocatedImage _whiteImage;
-  AllocatedImage _blackImage;
-  AllocatedImage _greyImage;
-  AllocatedImage _errorCheckerboardImage;
-
-  VkSampler _defaultSamplerLinear;
-  VkSampler _defaultSamplerNearest;
 
   GPUSceneData sceneData;
 
@@ -162,19 +157,9 @@ class VulkanEngine : public RenderEngine {
   void destroy_swapchain();
 
   // Buffer management
-  AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage,
-                                VmaMemoryUsage memoryUsage);
-  void destroy_buffer(const AllocatedBuffer& buffer);
   std::vector<VkImage> _swapchainImages;
   std::vector<VkImageView> _swapchainImageViews;
   VkExtent2D _swapchainExtent;
-
-  // Image management
-  AllocatedImage create_image(VkExtent3D size, VkFormat format,
-                              VkImageUsageFlags usage, bool mipmapped = false);
-  AllocatedImage create_image(void* data, VkExtent3D size, VkFormat format,
-                              VkImageUsageFlags usage, bool mipmapped = false);
-  void destroy_image(const AllocatedImage& img);
 
   DrawContext mainDrawContext;
   std::unordered_map<std::string, std::shared_ptr<Node>> loadedNodes;
@@ -200,6 +185,27 @@ class VulkanEngine : public RenderEngine {
   void loadScene() override;
   std::shared_ptr<RenderComponent> loadObject() override;
 
+  // TODO: A good amount of these should not be exposed publicly based on the
+  // frontend/backend setup we have already. THis is just to get GLTF file
+  // loading working
+  AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage,
+                                VmaMemoryUsage memoryUsage);
+
+  void destroy_buffer(const AllocatedBuffer& buffer);
+
+  // Image management
+  AllocatedImage create_image(VkExtent3D size, VkFormat format,
+                              VkImageUsageFlags usage, bool mipmapped = false);
+  AllocatedImage create_image(void* data, VkExtent3D size, VkFormat format,
+                              VkImageUsageFlags usage, bool mipmapped = false);
+  void destroy_image(const AllocatedImage& img);
+
+  // End TODO
+
+  std::unordered_map<std::string, std::shared_ptr<LoadedGLTF>> loadedScenes;
+  VkSampler _defaultSamplerLinear;
+  VkSampler _defaultSamplerNearest;
+
   VkDevice _device;  // Vulkan device for commands
 
   //< Render loop resources
@@ -211,6 +217,11 @@ class VulkanEngine : public RenderEngine {
 
   MaterialInstance defaultData;
   GLTFMetallic_Roughness metalRoughMaterial;
+
+  AllocatedImage _whiteImage;
+  AllocatedImage _blackImage;
+  AllocatedImage _greyImage;
+  AllocatedImage _errorCheckerboardImage;
 
   // Layouts
   VkDescriptorSetLayout
@@ -228,6 +239,32 @@ class VulkanEngine : public RenderEngine {
 
   GPUMeshBuffers uploadMesh(std::span<uint32_t> indices,
                             std::span<Vertex> vertices);
+};
+
+struct LoadedGLTF : IRenderable {
+  // storage for all the data on a given glTF file
+  std::unordered_map<std::string, std::shared_ptr<MeshAsset>> meshes;
+  std::unordered_map<std::string, std::shared_ptr<Node>> nodes;
+  std::unordered_map<std::string, AllocatedImage> images;
+  std::unordered_map<std::string, std::shared_ptr<GLTFMaterial>> materials;
+
+  // nodes that dont have a parent, for iterating through the file in tree order
+  std::vector<std::shared_ptr<Node>> topNodes;
+
+  std::vector<VkSampler> samplers;
+
+  DynamicDescriptorAllocator descriptorPool;
+
+  AllocatedBuffer materialDataBuffer;
+
+  VulkanEngine* creator;
+
+  ~LoadedGLTF() { clearAll(); }
+
+  virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx);
+
+ private:
+  void clearAll();
 };
 
 #endif  // ORION_CORE_RENDER_ENGINES_VULKAN_VULKAN_ENGINE_H_

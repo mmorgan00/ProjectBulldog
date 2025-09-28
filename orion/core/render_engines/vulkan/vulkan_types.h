@@ -8,9 +8,9 @@
 #include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vulkan.h>
 
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
 #include "render_engines/vulkan/vulkan_descriptors.h"
 
@@ -133,7 +133,6 @@ struct GeoSurface {
   uint32_t count;
   std::shared_ptr<GLTFMaterial> material;
 };
-
 
 struct MeshAsset {
   std::string name;
