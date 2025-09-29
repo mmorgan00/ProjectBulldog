@@ -953,7 +953,7 @@ void VulkanEngine::init_default_data() {
   //   loadedNodes[m->name] = std::move(newNode);
   // }
 
-  std::string structurePath = {"../../assets/structure_mat.glb"};
+  std::string structurePath = {"../../assets/structure.glb"};
   auto structureFile = vkutil::loadGltfBinary(this, structurePath);
 
   assert(structureFile.has_value());

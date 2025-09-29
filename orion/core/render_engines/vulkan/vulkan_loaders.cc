@@ -6,10 +6,10 @@
 #include <fastgltf/glm_element_traits.hpp>
 #include <fastgltf/tools.hpp>
 #include <filesystem>
+#include <memory>
+#include <string>
 #include <utility>
 #include <vector>
-#include <string>
-#include <memory>
 
 #include "fastgltf/types.hpp"
 #include "glm/gtx/quaternion.hpp"
@@ -80,6 +80,26 @@ std::optional<AllocatedImage> load_image(VulkanEngine* engine,
                     // specify LoadExternalBuffers, meaning all buffers
                     // are already loaded into a vector.
                     [](auto& arg) {},
+                    [&](fastgltf::sources::Array& array) {
+                      OE_LOG(VULKAN_ENGINE, INFO, "ARRAY FOUND");
+                      unsigned char* data = stbi_load_from_memory(
+                          reinterpret_cast<const unsigned char*>(
+                              array.bytes.data() + bufferView.byteOffset),
+                          static_cast<int>(bufferView.byteLength), &width,
+                          &height, &nrChannels, 4);
+                      if (data) {
+                        VkExtent3D imagesize;
+                        imagesize.width = width;
+                        imagesize.height = height;
+                        imagesize.depth = 1;
+
+                        newImage = engine->create_image(
+                            data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
+                            VK_IMAGE_USAGE_SAMPLED_BIT, false);
+
+                        stbi_image_free(data);
+                      }
+                    },
                     [&](fastgltf::sources::Vector& vector) {
                       unsigned char* data = stbi_load_from_memory(
                           reinterpret_cast<const unsigned char*>(
@@ -104,8 +124,8 @@ std::optional<AllocatedImage> load_image(VulkanEngine* engine,
       },
       image.data);
 
-  // if any of the attempts to load the data failed, we havent written the image
-  // so handle is null
+  // if any of the attempts to load the data failed, we havent written
+  // the image so handle is null
   if (newImage.image == VK_NULL_HANDLE) {
     return {};
   } else {
@@ -230,14 +250,19 @@ std::optional<std::shared_ptr<LoadedGLTF>> vkutil::loadGltfBinary(
 
   // load all textures
   for (fastgltf::Image& image : gltf.images) {
+    OE_LOG(VULKAN_ENGINE, INFO, "Attempting to load gltf texture data index {}",
+           image.data.index());
+
     std::optional<AllocatedImage> img = load_image(engine, gltf, image);
 
     if (img.has_value()) {
+      OE_LOG(VULKAN_ENGINE, INFO, "Succesfully loaded gltf texture {}",
+             image.name);
       images.push_back(*img);
       file.images[image.name.c_str()] = *img;
     } else {
-      // we failed to load, so lets give the slot a default white texture to not
-      // completely break loading
+      // we failed to load, so lets give the slot a default white texture to
+      // not completely break loading
       images.push_back(engine->_errorCheckerboardImage);
       OE_LOG(VULKAN_ENGINE, INFO, "Failed to load gltf texture {}", image.name);
     }
@@ -303,8 +328,8 @@ std::optional<std::shared_ptr<LoadedGLTF>> vkutil::loadGltfBinary(
     data_index++;
   }
 
-  // use the same vectors for all meshes so that the memory doesnt reallocate as
-  // often
+  // use the same vectors for all meshes so that the memory doesnt reallocate
+  // as often
   std::vector<uint32_t> indices;
   std::vector<Vertex> vertices;
 
