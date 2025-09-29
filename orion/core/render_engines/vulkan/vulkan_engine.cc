@@ -11,9 +11,9 @@
 #include <algorithm>
 #include <glm/gtx/transform.hpp>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
-#include <string>
 
 #include "SDL_video.h"
 #include "core/engine_types.h"
@@ -160,7 +160,7 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
                       VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
   writer.update_set(_device, globalDescriptor);
 
-  for (const RenderObject& draw : mainDrawContext.OpaqueSurfaces) {
+  auto draw = [&](const RenderObject& draw) {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       draw.material->pipeline->pipeline);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -180,10 +180,20 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
                        sizeof(GPUDrawPushConstants), &pushConstants);
 
     vkCmdDrawIndexed(cmd, draw.indexCount, 1, draw.firstIndex, 0, 0);
+  };
+
+  for (auto& r : mainDrawContext.OpaqueSurfaces) {
+    draw(r);
   }
+
+  for (auto& r : mainDrawContext.TransparentSurfaces) {
+    draw(r);
+  }
+
   vkCmdEndRendering(cmd);
   // we delete the draw commands now that we processed them
   mainDrawContext.OpaqueSurfaces.clear();
+  mainDrawContext.TransparentSurfaces.clear();
 }
 
 void VulkanEngine::draw() {
@@ -1018,9 +1028,6 @@ void VulkanEngine::update_scene() {
   mainDrawContext.OpaqueSurfaces.clear();
   vkDeviceWaitIdle(_device);
 
-  // loadedScenes.clear();
-
-  // loadedNodes["Suzanne"]->Draw(glm::mat4{1.f}, mainDrawContext);
   loadedScenes["structure"]->Draw(glm::mat4{1.f}, mainDrawContext);
 
   sceneData.view = mainCamera->getViewMatrix();
