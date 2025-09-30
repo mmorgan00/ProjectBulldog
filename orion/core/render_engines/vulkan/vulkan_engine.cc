@@ -64,6 +64,7 @@ void VulkanEngine::cleanup() {
     loadedScenes.clear();
 
     for (int i = 0; i < MAX_CONCURRENT_FRAMES; i++) {
+      _frames[i]._deletionQueue.flush();
       vkDestroyCommandPool(_device, _frames[i]._commandPool, nullptr);
 
       // destroy sync objects
@@ -953,7 +954,6 @@ void VulkanEngine::init_default_data() {
       _device, MaterialPass::MainColor, materialResources,
       globalDescriptorAllocator);
 
-
   // meshes = vkutil::loadMeshGLB(this, "../../assets/basicmesh.glb").value();
 
   // for (auto& m : meshes) {
@@ -1304,7 +1304,6 @@ MaterialInstance GLTFMetallic_Roughness::write_material(
                      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
   writer.update_set(device, matData.materialSet);
-
 
   return matData;
 }
