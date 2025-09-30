@@ -9,6 +9,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include <algorithm>
+#include <cstdio>
 #include <glm/gtx/transform.hpp>
 #include <memory>
 #include <string>
@@ -26,6 +27,7 @@
 #include "util/logger.h"
 
 #define VMA_IMPLEMENTATION
+#define VMA_ASSERT_LEAK
 #include "third_party/vma/vk_mem_alloc.h"
 
 VulkanEngine* loadedEngine = nullptr;
@@ -56,6 +58,10 @@ void VulkanEngine::set_camera(Camera* camera) { mainCamera = camera; }
 void VulkanEngine::cleanup() {
   if (_isInitialized) {
     vkDeviceWaitIdle(_device);
+
+    metalRoughMaterial.clear_resources(_device);
+
+    loadedScenes.clear();
 
     for (int i = 0; i < MAX_CONCURRENT_FRAMES; i++) {
       vkDestroyCommandPool(_device, _frames[i]._commandPool, nullptr);
@@ -947,6 +953,7 @@ void VulkanEngine::init_default_data() {
       _device, MaterialPass::MainColor, materialResources,
       globalDescriptorAllocator);
 
+
   // meshes = vkutil::loadMeshGLB(this, "../../assets/basicmesh.glb").value();
 
   // for (auto& m : meshes) {
@@ -1298,7 +1305,15 @@ MaterialInstance GLTFMetallic_Roughness::write_material(
 
   writer.update_set(device, matData.materialSet);
 
+
   return matData;
+}
+
+void GLTFMetallic_Roughness::clear_resources(VkDevice Device) {
+  vkDestroyPipeline(Device, opaquePipeline.pipeline, nullptr);
+  vkDestroyPipeline(Device, transparentPipeline.pipeline, nullptr);
+  vkDestroyPipelineLayout(Device, opaquePipeline.layout, nullptr);
+  vkDestroyDescriptorSetLayout(Device, materialLayout, nullptr);
 }
 
 //

@@ -81,7 +81,6 @@ std::optional<AllocatedImage> load_image(VulkanEngine* engine,
                     // are already loaded into a vector.
                     [](auto& arg) {},
                     [&](fastgltf::sources::Array& array) {
-                      OE_LOG(VULKAN_ENGINE, INFO, "ARRAY FOUND");
                       unsigned char* data = stbi_load_from_memory(
                           reinterpret_cast<const unsigned char*>(
                               array.bytes.data() + bufferView.byteOffset),
@@ -250,14 +249,9 @@ std::optional<std::shared_ptr<LoadedGLTF>> vkutil::loadGltfBinary(
 
   // load all textures
   for (fastgltf::Image& image : gltf.images) {
-    OE_LOG(VULKAN_ENGINE, INFO, "Attempting to load gltf texture data index {}",
-           image.data.index());
-
     std::optional<AllocatedImage> img = load_image(engine, gltf, image);
 
     if (img.has_value()) {
-      OE_LOG(VULKAN_ENGINE, INFO, "Succesfully loaded gltf texture {}",
-             image.name);
       images.push_back(*img);
       file.images[image.name.c_str()] = *img;
     } else {
@@ -272,6 +266,10 @@ std::optional<std::shared_ptr<LoadedGLTF>> vkutil::loadGltfBinary(
   file.materialDataBuffer = engine->create_buffer(
       sizeof(GLTFMetallic_Roughness::MaterialConstants) * gltf.materials.size(),
       VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+  // engine->_mainDeletionQueue.push_function(
+  //     [=]() { engine->destroy_buffer(file.materialDataBuffer); });
+
   int data_index = 0;
   GLTFMetallic_Roughness::MaterialConstants* sceneMaterialConstants =
       (GLTFMetallic_Roughness::MaterialConstants*)
@@ -485,6 +483,10 @@ std::optional<std::shared_ptr<LoadedGLTF>> vkutil::loadGltfBinary(
       node->refreshTransform(glm::mat4{1.f});
     }
   }
+
+  // engine->_mainDeletionQueue.push_function(
+  //     [=]() { engine->destroy_buffer(file.materialDataBuffer); });
+
   return scene;
 }
 

@@ -98,7 +98,6 @@ class VulkanEngine : public RenderEngine {
   struct SDL_Window* _window{nullptr};
 
   //< Object managers
-  DeletionQueue _mainDeletionQueue;
   VmaAllocator _allocator;
   //> Object managers
 
@@ -185,6 +184,9 @@ class VulkanEngine : public RenderEngine {
   bool init(app_state& state) override;
   void loadScene() override;
   std::shared_ptr<RenderComponent> loadObject() override;
+
+
+  DeletionQueue _mainDeletionQueue;
 
   // TODO: A good amount of these should not be exposed publicly based on the
   // frontend/backend setup we have already. THis is just to get GLTF file
