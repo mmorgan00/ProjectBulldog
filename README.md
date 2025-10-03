@@ -15,7 +15,7 @@
         - volk -> vulkan helper library
     - Vulkan, notably, is not listed here, as the Vulkan SDK/drivers must be installed in the system. This is hopefully something I will include already in any prebuilt binaries I produce
 2. orion directory
-    - This contains the source code for the underlying engine. I chose the name Orion after the submarine USS Orion my grandpa was a CO of during his service in the Navy
+    - This contains the source code for the underlying engine. 
     - The center of this is an entry.h file, which for now, defines the following:
     ```cpp
     extern void init();
@@ -40,10 +40,27 @@
     - Next major commit should contain the scene declaration and running, which will be showcased here
 
 ### Renderer overview
-- Current renderer support is limited, as the engine refactor is not-yet complete. Previous commits and other branches contain much more functional rendering of a full GLB file with material support:
+- The Renderer is split up into a 'frontend' and 'backend'.
+- Renderer Backends I am calling Render Engines
+- The point of this separation is so that down the road I can implement other graphics APIs beyond Vulkan and not have to redo the entire wiring of object updating to draw calls, or if I decide to shift to a deffered renderer or a GPU driven renderer, the API to the rest of the code can stay mostly intact
+- The API for the frontend is pretty straightforward
+```cpp
+## orion/core/renderer.h
+class Renderer {
+  void init(app_state& state);
+  void cleanup();
+  void draw();
+  std::shared_ptr<RenderComponent> loadScene(std::string_view fileName);
+  void resize_window();
+  void set_camera(Camera* camera);
+```
+- Init/shutdown functions, draw the next frame, set a camera to use as the view matrix, and handle window resizes make up the 'core' functions
+- loadScene is the first 'real' API of the engine in my opinion. This takes in a file path which, as of now, must be realtive to the assets folder from the executable.
+    - Note: This needs improving. Relative paths like that are annoying to deal with, and it should be doing some sort of copying, or path handling on it's own, or any number of things
+    - loadScene currently only supports a GLTF Binary file (GLB). You can see an example below
 ![Station Render example](screenshots/Station-Render.png "Station GLB Render")
 > Screenshot captured in-engine
-- Currently, a compute shader execution to set a background is supported, and a primitive graphics pipeline (mesh loading is next to be implemented);
+- Currently, a compute shader execution to set a background is supported, and a simple PBR forward graphics pipeline
 - Proper named renderpasses in vulkan are not used. As of Vulkan 1.3, dynamic rendering is supported, which is what I am using
     - Current draw process psuedo code is as follows:
     ```
@@ -67,9 +84,6 @@
     - We do not declare a dedicated 'renderpass' and instead use our own image to draw into along the way. This will help down the road for better postprocess effects.
     
 
-### Engine API
-- A proper API is not yet available. As the previous version of the project was a rather hardcoded scene render from a GLB file, there is a good chunk of outstanding work to shift it to a more proper API. 
-- This section will be updated as progress is made
 #### Utils
 - Logging macro OE_LOG
     ```cpp
@@ -91,14 +105,10 @@
     ```
 
 
-
-
 ### Feature roadmap
 - [x] Build system revamp
-- [x] scene graph declaration 
-    - Initial background declaration done
-    - Scenes directory will contain this. There is a very primitive scene that points to the compute shader to be used as the background, with a 'hello triangle' graphics pipeline. It should look something like this:
-![Compute Background with trianglle in demo scene](screenshots/CurrentStatus.png "Gradient background with a triangle showing compute shader execution") 
+- [ ] scene graph declaration 
+    - Renderer supports calling 'loadScene()' in code however this requires a recompile and running, and some sort of data file edit and rerunning is the target
     - Further progress will have object, mesh files, script referencing, materials, and so on, that is assembled into a scene graph.
 - [ ] ECS/Actor system 
     - The aim is an OOP driven class sytem:
@@ -109,14 +119,11 @@
 - [ ] Physics system
     - At minimum, giving actors the ability to move around and a basic collision system. 
 - [ ] Audio
-- [ ] PBR Material support
-    - Better material support since previous status included GLB loading. 
+- [x] PBR Material support
+    - Basic PBR rendering according to gltf file spec is supported
 - [ ] Rendering improvements
-    - This will be a continual area of effort. There are a LOT of things I want to work with.
-        - Deferred rendering. Likely first candidate
-        - Hybrid rendering, as a followup to deferred rendering, for adding real-time raytracing for the finer effects, reflections and more. Using this [blogpost](https://www.gamedev.net/projects/380-real-time-hybrid-rasterization-raytracing-engine/) as a reference point for desired functionality.
-        - GPU driven/compute based rendering, especially for instanced objects
-        - Proper lighting. I was contemplating starting with shadowmaps, however given my plan for hybrid rendering I may jump straight to ray-traced shadows
+    - This will likely be a continual area of focus, however for now we have GLTF loading/rendering and very basic lighting. This should carry for a good amount of time while other features are implemented
+    - More lights
 - [ ] Multi-API graphics
     - Vulkan was the first choice as a) I develop on linux and b) it's cross platform already to my other windows machine
         - As of [9c1d1ad](https://github.com/mmorgan00/ProjectBulldog/commit/9c1d1ade00d5fd01d00b8154a1914d967b91971d), render module supports a backend abstraction from rest of the app
