@@ -41,6 +41,10 @@ VkImageCreateInfo image_create_info(VkFormat format,
 VkImageViewCreateInfo imageview_create_info(VkFormat format, VkImage image,
                                             VkImageAspectFlags aspectFlags);
 
+VkRenderingAttachmentInfo depth_attachment_info(
+    VkImageView view,
+    VkImageLayout layout /*= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL*/);
+
 // Pipelines
 
 VkPipelineLayoutCreateInfo pipeline_layout_create_info();
@@ -54,8 +58,9 @@ VkRenderingAttachmentInfo attachment_info(
 //< Attachment info
 
 //> Render info
-VkRenderingInfo rendering_info(VkExtent2D renderExtent, VkRenderingAttachmentInfo* colorAttachment,
-    VkRenderingAttachmentInfo* depthAttachment);
+VkRenderingInfo rendering_info(VkExtent2D renderExtent,
+                               VkRenderingAttachmentInfo *colorAttachment,
+                               VkRenderingAttachmentInfo *depthAttachment);
 //< Render info
 
 }  // namespace vkinit

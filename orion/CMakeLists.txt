@@ -18,7 +18,11 @@ add_executable(demo
   core/render_engines/vulkan/vulkan_descriptors.cc
   core/render_engines/vulkan/vulkan_pipelines.h
   core/render_engines/vulkan/vulkan_pipelines.cc
-
+  core/render_engines/vulkan/vulkan_loaders.h
+  core/render_engines/vulkan/vulkan_loaders.cc
+  entity/oentity.h
+  entity/camera.h
+  entity/camera.cc
 )
 
 set_property(TARGET demo PROPERTY CXX_STANDARD 20)

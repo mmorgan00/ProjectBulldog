@@ -3,7 +3,8 @@
 #include <string>
 #include <thread>
 
-#include "SDL.h"
+#include "SDL_events.h"
+#include "SDL_video.h"
 #include "core/engine_types.h"
 #include "core/renderer.h"
 #include "orion/entry.h"
@@ -19,18 +20,30 @@ int main(int argc, char *argv[]) {
   simdjson::ondemand::document config = parser.iterate(json);
 
   state.build(config);
+
+  Camera mainCamera;
+
+  mainCamera.velocity = glm::vec3(0.f);
+  mainCamera.position = glm::vec3(30.f, -00.f, -085.f);
+
+  mainCamera.pitch = 0;
+  mainCamera.yaw = 0;
+
   OE_LOG(ORION, INFO, "{}", std::string(state.appName));
   OE_LOG(ORION, INFO, "Running using {}", std::string(config["graphicsAPI"]));
   // Init modules
   Renderer renderer;
   renderer.init(state);
+  renderer.set_camera(&mainCamera);
   // Call game initialization
   init();
-  renderer.loadScene("demo");
+
+  renderer.loadScene("../../assets/structure_mat.glb");
 
   // Main loop
   bool bQuit = false;
   bool bStopRunning = false;
+  bool resize_requested = false;
   SDL_Event e;
   while (!bQuit) {
     // Handle events on queue
@@ -38,6 +51,7 @@ int main(int argc, char *argv[]) {
       // close the window when user alt-f4s or clicks the X button
       if (e.type == SDL_QUIT) bQuit = true;
 
+      mainCamera.handleInputEvent(e);
       // Handle keypress
       if (e.type == SDL_KEYDOWN) {
         // Another way to quit
@@ -53,6 +67,9 @@ int main(int argc, char *argv[]) {
         if (e.window.event == SDL_WINDOWEVENT_RESTORED) {
           bStopRunning = false;
         }
+        if (e.window.event == SDL_WINDOWEVENT_RESIZED) {
+          resize_requested = true;
+        }
       }
 
       if (bStopRunning) {
@@ -64,6 +81,12 @@ int main(int argc, char *argv[]) {
       // TODO: Proper tick loop -> should be endless loop until quit signal
       // recevied
     }
+    if (resize_requested) {
+      renderer.resize_window();
+      resize_requested = false;
+      continue;  // skip the draw call this frame
+    }
+
     renderer.draw();
   }
 

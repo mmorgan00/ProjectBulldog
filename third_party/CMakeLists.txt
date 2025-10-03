@@ -1,6 +1,10 @@
 find_package(Vulkan REQUIRED)
 find_package(simdjson REQUIRED)
 
+
+# For whatever reason this doesn't compile for me
+set(SDL_PIPEWIRE Off) 
+
 add_library(vkbootstrap STATIC)
 add_library(nlohmann INTERFACE)
 add_library(glm INTERFACE)
@@ -19,7 +23,6 @@ target_sources(vkbootstrap PRIVATE
 
 
 target_include_directories(vkbootstrap PUBLIC vkbootstrap)
-target_include_directories(nlohmann INTERFACE nlohmann)
 target_link_libraries(vkbootstrap PUBLIC Vulkan::Vulkan $<$<BOOL:UNIX>:${CMAKE_DL_LIBS}>)
 set_property(TARGET vkbootstrap PROPERTY CXX_STANDARD 20)
 

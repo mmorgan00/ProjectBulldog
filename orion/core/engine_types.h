@@ -4,10 +4,10 @@
 #define ORION_CORE_ENGINE_TYPES_H_
 #include <simdjson.h>
 
+#include <string>
 
 constexpr int MAX_CONCURRENT_FRAMES = 2;
 
-#include <string>
 typedef struct app_state {
   std::string appName;
   std::string graphicsAPI;

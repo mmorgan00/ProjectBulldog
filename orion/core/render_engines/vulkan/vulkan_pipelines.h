@@ -35,6 +35,8 @@ class PipelineBuilder {
 
   void set_input_topology(VkPrimitiveTopology topology);
 
+  void enable_depthtest(bool depthWriteEnable, VkCompareOp op);
+
   void set_polygon_mode(VkPolygonMode mode);
 
   void set_cull_mode(VkCullModeFlags cullMode, VkFrontFace frontFace);
@@ -46,6 +48,10 @@ class PipelineBuilder {
   void set_depth_format(VkFormat format);
 
   void disable_blending();
+
+  void enable_blending_additive();
+
+  void enable_blending_alphablend();
 
   void disable_depthtest();
 };

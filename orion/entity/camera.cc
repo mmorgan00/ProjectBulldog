@@ -1,19 +1,22 @@
 // Copyright 2025 Max Morgan
 
-#include <camera.h>
+#include <orion/entity/camera.h>
+#include <orion/util/logger.h>
 
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/transform.hpp>
+
+DECLARE_LOG_CATEGORY(CAMERA);
 
 void Camera::update() {
   glm::mat4 cameraRotation = getRotationMatrix();
   position += glm::vec3(cameraRotation * glm::vec4(velocity * 0.5f, 0.f));
 }
 
-// TODO: This is a very simple approach, and leaves a lot of room just on
-// handling multiple inputs.
-void Camera::processSDLEvent(SDL_Event& e) {
+void Camera::handleInputEvent(SDL_Event& e) {
+
   if (e.type == SDL_KEYDOWN) {
+
     if (e.key.keysym.sym == SDLK_w) {
       velocity.z = -1;
     }
@@ -29,6 +32,7 @@ void Camera::processSDLEvent(SDL_Event& e) {
   }
 
   if (e.type == SDL_KEYUP) {
+
     if (e.key.keysym.sym == SDLK_w) {
       velocity.z = 0;
     }
