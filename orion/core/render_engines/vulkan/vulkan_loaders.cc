@@ -484,9 +484,6 @@ std::optional<std::shared_ptr<LoadedGLTF>> vkutil::loadGltfBinary(
     }
   }
 
-  // engine->_mainDeletionQueue.push_function(
-  //     [=]() { engine->destroy_buffer(file.materialDataBuffer); });
-
   return scene;
 }
 

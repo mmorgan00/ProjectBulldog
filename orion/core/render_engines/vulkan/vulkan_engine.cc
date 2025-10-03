@@ -95,7 +95,15 @@ void VulkanEngine::cleanup() {
   loadedEngine = nullptr;
 }
 
-void VulkanEngine::loadScene() {}
+void VulkanEngine::loadScene(std::string_view fileName) {
+  // Based on filetype :q
+  std::string structurePath = {fileName.data()};
+  auto structureFile = vkutil::loadGltfBinary(this, structurePath);
+
+  assert(structureFile.has_value());
+
+  loadedScenes["structure"] = *structureFile;
+}
 
 //> Draw calls
 void VulkanEngine::draw_background(VkCommandBuffer cmd) {
@@ -953,29 +961,6 @@ void VulkanEngine::init_default_data() {
   defaultData = metalRoughMaterial.write_material(
       _device, MaterialPass::MainColor, materialResources,
       globalDescriptorAllocator);
-
-  // meshes = vkutil::loadMeshGLB(this, "../../assets/basicmesh.glb").value();
-
-  // for (auto& m : meshes) {
-  //   std::shared_ptr<MeshNode> newNode = std::make_shared<MeshNode>();
-  //   newNode->mesh = m;
-
-  //   newNode->localTransform = glm::mat4{1.f};
-  //   newNode->worldTransform = glm::mat4{1.f};
-
-  //   for (auto& s : newNode->mesh->surfaces) {
-  //     s.material = std::make_shared<GLTFMaterial>(defaultData);
-  //   }
-
-  //   loadedNodes[m->name] = std::move(newNode);
-  // }
-
-  std::string structurePath = {"../../assets/structure.glb"};
-  auto structureFile = vkutil::loadGltfBinary(this, structurePath);
-
-  assert(structureFile.has_value());
-
-  loadedScenes["structure"] = *structureFile;
 }
 
 void LoadedGLTF::Draw(const glm::mat4& topMatrix, DrawContext& ctx) {
@@ -1035,7 +1020,9 @@ void VulkanEngine::update_scene() {
   mainDrawContext.OpaqueSurfaces.clear();
   vkDeviceWaitIdle(_device);
 
-  loadedScenes["structure"]->Draw(glm::mat4{1.f}, mainDrawContext);
+  if (loadedScenes["structure"]) {
+    loadedScenes["structure"]->Draw(glm::mat4{1.f}, mainDrawContext);
+  }
 
   sceneData.view = mainCamera->getViewMatrix();
   // camera projection

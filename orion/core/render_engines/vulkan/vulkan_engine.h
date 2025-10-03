@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -182,7 +183,7 @@ class VulkanEngine : public RenderEngine {
   VkPipeline _defaultPipeline;
 
   bool init(app_state& state) override;
-  void loadScene() override;
+  void loadScene(std::string_view fileName) override;
   std::shared_ptr<RenderComponent> loadObject() override;
 
 

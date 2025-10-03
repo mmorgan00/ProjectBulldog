@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include "core/engine_types.h"
 #include "entity/camera.h"
@@ -28,9 +29,9 @@ class Renderer {
   void draw();
 
   /**
-   * @brief load a single object to be rendered
+   * @brief load a single Scene to be rendered
    */
-  std::shared_ptr<RenderComponent> loadObject();
+  std::shared_ptr<RenderComponent> loadScene(std::string_view fileName);
 
   /**
    * @brief resize the window
@@ -41,11 +42,6 @@ class Renderer {
    * @brief Sets the camera to use fr the render view matrix
    */
   void set_camera(Camera* camera);
-
-  /**
-   * @brief loads a scene by name
-   */
-  void loadScene(std::string sceneName);
 
  private:
   std::shared_ptr<RenderEngine> engine;
@@ -58,7 +54,7 @@ class RenderEngine {
    */
   virtual bool init(app_state& state) = 0;
   virtual ~RenderEngine() = default;
-  virtual void loadScene() = 0;
+  virtual void loadScene(std::string_view fileName) = 0;
   virtual std::shared_ptr<RenderComponent> loadObject() = 0;
   virtual void set_camera(Camera* camera) = 0;
   virtual void draw() = 0;
@@ -70,7 +66,6 @@ class RenderEngine {
 class RenderComponent {
  public:
   explicit RenderComponent(RenderEngine* renderEngine);
-  void setVisible();
 
  private:
   RenderEngine* engine;

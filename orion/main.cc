@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
   // Call game initialization
   init();
 
-  // renderer.loadScene("demo");
+  renderer.loadScene("../../assets/structure_mat.glb");
 
   // Main loop
   bool bQuit = false;
