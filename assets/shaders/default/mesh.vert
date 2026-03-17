@@ -1,45 +1,40 @@
 
-#version 450
-
-#extension GL_GOOGLE_include_directive : require
-#extension GL_EXT_buffer_reference : require
-
-#include "input_structures.glsl"
-
-layout (location = 0) out vec3 outNormal;
-layout (location = 1) out vec3 outColor;
-layout (location = 2) out vec2 outUV;
+import input_structures;
 
 struct Vertex {
-
-	vec3 position;
-	float uv_x;
-	vec3 normal;
-	float uv_y;
-	vec4 color;
-}; 
-
-layout(buffer_reference, std430) readonly buffer VertexBuffer{ 
-	Vertex vertices[];
+    float3 position;
+    float  uv_x;
+    float3 normal;
+    float  uv_y;
+    float4 color;
 };
 
-//push constants block
-layout( push_constant ) uniform constants
+struct PushConstants {
+    float4x4 render_matrix;
+    Vertex*  vertexBuffer;
+};
+
+[vk::push_constant]
+uniform PushConstants pushConstants;
+
+struct VertexOutput {
+    float4 position : SV_Position;
+    float3 normal   : NORMAL;
+    float3 color    : COLOR;
+    float2 uv       : TEXCOORD0;
+};
+
+[shader("vertex")]
+VertexOutput main(uint vertexIndex : SV_VulkanVertexID)
 {
-	mat4 render_matrix;
-	VertexBuffer vertexBuffer;
-} PushConstants;
+    Vertex v = pushConstants.vertexBuffer[vertexIndex];
 
-void main() 
-{
-	Vertex v = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
-	
-	vec4 position = vec4(v.position, 1.0f);
-
-	gl_Position =  sceneData.viewproj * PushConstants.render_matrix *position;
-
-	outNormal = (PushConstants.render_matrix * vec4(v.normal, 0.f)).xyz;
-	outColor = v.color.xyz * materialData.colorFactors.xyz;	
-	outUV.x = v.uv_x;
-	outUV.y = v.uv_y;
+    VertexOutput output;
+    output.position = mul(sceneData.viewproj, mul(pushConstants.render_matrix, float4(v.position, 1.0f)));
+    output.normal   = mul(pushConstants.render_matrix, float4(v.normal, 0.f)).xyz;
+    output.color    = v.color.xyz * materialData.colorFactors.xyz;
+    output.uv.x     = v.uv_x;
+    output.uv.y     = v.uv_y;
+    return output;
 }
+
