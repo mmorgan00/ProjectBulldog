@@ -18,7 +18,7 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
-#include "SDL_internal.h"
+#include "./SDL_internal.h"
 
 /* This file defines a structure that carries language-independent
    error messages
@@ -27,35 +27,18 @@
 #ifndef SDL_error_c_h_
 #define SDL_error_c_h_
 
-typedef enum
-{
-    SDL_ErrorCodeNone,
-    SDL_ErrorCodeGeneric,
-    SDL_ErrorCodeOutOfMemory,
-} SDL_ErrorCode;
-
 typedef struct SDL_error
 {
-    SDL_ErrorCode error;
+    int error; /* This is a numeric value corresponding to the current error */
     char *str;
     size_t len;
     SDL_realloc_func realloc_func;
     SDL_free_func free_func;
 } SDL_error;
 
-// Defined in SDL_thread.c
-extern SDL_error *SDL_GetErrBuf(bool create);
+/* Defined in SDL_thread.c */
+extern SDL_error *SDL_GetErrBuf(void);
 
-// Macros to save and restore error values
-#define SDL_PushError() \
-    char *saved_error = SDL_strdup(SDL_GetError())
+#endif /* SDL_error_c_h_ */
 
-#define SDL_PopError()                          \
-    do {                                        \
-        if (saved_error) {                      \
-            SDL_SetError("%s", saved_error);    \
-            SDL_free(saved_error);              \
-        }                                       \
-    } while (0)
-
-#endif // SDL_error_c_h_
+/* vi: set ts=4 sw=4 expandtab: */

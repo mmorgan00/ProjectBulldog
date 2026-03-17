@@ -18,31 +18,32 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
-#include "SDL_internal.h"
+#include "./SDL_internal.h"
 
+#include "SDL.h"
 #include "./SDL_list.h"
 
-// Push
-bool SDL_ListAdd(SDL_ListNode **head, void *ent)
+/* Push */
+int SDL_ListAdd(SDL_ListNode **head, void *ent)
 {
-    SDL_ListNode *node = (SDL_ListNode *)SDL_malloc(sizeof(*node));
+    SDL_ListNode *node = SDL_malloc(sizeof(*node));
 
     if (!node) {
-        return false;
+        return SDL_OutOfMemory();
     }
 
     node->entry = ent;
     node->next = *head;
     *head = node;
-    return true;
+    return 0;
 }
 
-// Pop from end as a FIFO (if add with SDL_ListAdd)
+/* Pop from end as a FIFO (if add with SDL_ListAdd) */
 void SDL_ListPop(SDL_ListNode **head, void **ent)
 {
     SDL_ListNode **ptr = head;
 
-    // Invalid or empty
+    /* Invalid or empty */
     if (!head || !*head) {
         return;
     }
@@ -84,3 +85,5 @@ void SDL_ListClear(SDL_ListNode **head)
         SDL_free(tmp);
     }
 }
+
+/* vi: set ts=4 sw=4 expandtab: */

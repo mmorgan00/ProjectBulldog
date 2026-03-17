@@ -28,9 +28,11 @@ typedef struct SDL_ListNode
     struct SDL_ListNode *next;
 } SDL_ListNode;
 
-bool SDL_ListAdd(SDL_ListNode **head, void *ent);
+int SDL_ListAdd(SDL_ListNode **head, void *ent);
 void SDL_ListPop(SDL_ListNode **head, void **ent);
 void SDL_ListRemove(SDL_ListNode **head, void *ent);
 void SDL_ListClear(SDL_ListNode **head);
 
-#endif // SDL_list_h_
+#endif /* SDL_list_h_ */
+
+/* vi: set ts=4 sw=4 expandtab: */
