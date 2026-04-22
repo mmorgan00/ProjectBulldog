@@ -38,7 +38,9 @@ int main(int argc, char *argv[]) {
   // Call game initialization
   init();
 
-  renderer.loadScene("../../assets/structure_mat.glb");
+  OE_LOG(ORION, INFO, "Loading initial scene {}",
+         std::string(config["entryScene"]));
+  renderer.loadScene(std::string(config["entryScene"]));
 
   // Main loop
   bool bQuit = false;

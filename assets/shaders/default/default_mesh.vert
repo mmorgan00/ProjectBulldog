@@ -1,36 +1,37 @@
-#version 450
-#extension GL_EXT_buffer_reference : require
 
-layout(location = 0) out vec3 outColor;
-layout(location = 1) out vec2 outUV;
-
-// Match struct on CPU side
 struct Vertex {
-    vec3 position;
-    float uv_x;
-    vec3 normal;
-    float uv_y;
-    vec4 color;
+    float3 position;
+    float  uv_x;
+    float3 normal;
+    float  uv_y;
+    float4 color;
 };
 
-layout(buffer_reference, std430) readonly buffer VertexBuffer {
-    Vertex vertices[];
+struct PushConstants {
+    float4x4 render_matrix;
+    Vertex*  vertexBuffer;
 };
 
-// push constants
-layout(push_constant) uniform constants {
-    mat4 render_matrix;
-    VertexBuffer vertexBuffer;
-} PushConstants;
+[vk::push_constant]
+uniform PushConstants pushConstants;
 
-void main()
+struct VertexOutput {
+    float4 position : SV_Position;
+    float3 color    : COLOR;
+    float2 uv       : TEXCOORD0;
+};
+
+[shader("vertex")]
+VertexOutput main(uint vertexIndex : SV_VulkanVertexID)
 {
-    // Pull vertex from device address
-    Vertex v = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
+    Vertex v = pushConstants.vertexBuffer[vertexIndex];
 
-    // output
-    gl_Position = PushConstants.render_matrix * vec4(v.position, 1.0f);
-    outColor = v.color.xyz;
-    outUV.x = v.uv_x;
-    outUV.y = v.uv_y;
+    VertexOutput output;
+    output.position = mul(pushConstants.render_matrix, float4(v.position, 1.0f));
+    output.color    = v.color.xyz;
+    output.uv.x     = v.uv_x;
+    output.uv.y     = v.uv_y;
+
+    return output;
 }
+
