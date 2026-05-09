@@ -1,7 +1,10 @@
 repos:
-- repo: https://github.com/cpplint/cpplint
-  rev: 2.0.0 
-  hooks:
-  - id: cpplint
-    args: [--verbose=3, --linelength=120] 
-    files: '^orion/.*\.(h|cc)$'  # Target C/C++ filee
+  - repo: https://github.com/pocc/pre-commit-hooks
+    rev: v1.3.5
+    hooks:
+      - id: clang-tidy
+        args: [--config-file=.clang-tidy]
+        files: '^orion/.*\.(h|cc)$'
+      - id: cppcheck
+        args: [--enable=warning,style,performance,portability, --std=c++17, --inline-suppr]
+        files: '^orion/.*\.(h|cc)$'

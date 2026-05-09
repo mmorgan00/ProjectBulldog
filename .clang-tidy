@@ -1,0 +1,9 @@
+Checks: >
+  google-*,
+  bugprone-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  -google-readability-todo
+WarningsAsErrors: ''
+HeaderFilterRegex: '^orion/.*\.(h|hpp)$'
