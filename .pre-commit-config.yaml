@@ -6,5 +6,12 @@ repos:
         args: [--config-file=.clang-tidy]
         files: '^orion/.*\.(h|cc)$'
       - id: cppcheck
-        args: [--enable=warning,style,performance,portability, --std=c++17, --inline-suppr]
+        args:
+            - --language=c++
+            - --std=c++20
+            - --enable=warning,style,performance,portability
+            - --suppress=missingIncludeSystem
+            - --suppress=unusedStructMember
+            - --inline-suppr
+            - --error-exitcode=1
         files: '^orion/.*\.(h|cc)$'
