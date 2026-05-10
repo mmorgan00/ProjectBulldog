@@ -1,33 +1,88 @@
 #ifndef ASSET_REGISTRY_H_
 #define ASSET_REGISTRY_H_
+#include <cstdint>
+#include <optional>
+#include <utility>
+#include <vector>
 
 template <typename T>
 struct Handle {
-  uint32_t index;       // slot in registry's storage
-  uint32_t generation;  // bumped when slot is reused
+  uint32_t index = 0;
+  uint32_t generation = 0;
+
+  // Default-constructed handle is invalid (generation 0 is never handed out).
+  bool valid() const { return generation != 0; }
+
+  bool operator==(const Handle& other) const {
+    return index == other.index && generation == other.generation;
+  }
+  bool operator!=(const Handle& other) const { return !(*this == other); }
 };
 
-/**
- * @brief Registry for a specific type of resource (Mesh, Audio, Material)
- * @detail The registry plays relatively dumb on concurrency and
- * synchronizaiton. The registry does *NOT* handle loading,
- * which is where the parallelization heavy work will likely go, but is not
- * a concern of the Registry
- **/
 template <typename T>
 class AssetRegistry {
+ public:
+  Handle<T> insert(T value) {
+    if (!free_list_.empty()) {
+      uint32_t idx = free_list_.back();
+      free_list_.pop_back();
+      slots_[idx].data = std::move(value);
+      // generation was already bumped when this slot was freed
+      return Handle<T>{idx, slots_[idx].generation};
+    }
+    slots_.push_back(Slot{1, std::move(value)});
+    return Handle<T>{static_cast<uint32_t>(slots_.size() - 1), 1};
+  }
+
+  T* get(Handle<T> handle) {
+    if (handle.index >= slots_.size()) {
+      return nullptr;
+    }
+    Slot& slot = slots_[handle.index];
+    if (slot.generation != handle.generation) {
+      return nullptr;
+    }
+    if (!slot.data.has_value()) {
+      return nullptr;
+    }
+    return &*slot.data;
+  }
+
+  const T* get(Handle<T> handle) const {
+    if (handle.index >= slots_.size()) {
+      return nullptr;
+    }
+    const Slot& slot = slots_[handle.index];
+    if (slot.generation != handle.generation) {
+      return nullptr;
+    }
+    if (!slot.data.has_value()) {
+      return nullptr;
+    }
+    return &*slot.data;
+  }
+
+  bool remove(Handle<T> handle) {
+    if (get(handle) == nullptr) {
+      return false;
+    }
+    slots_[handle.index].data.reset();
+    slots_[handle.index].generation++;
+    free_list_.push_back(handle.index);
+    return true;
+  }
+
+  size_t size() const { return slots_.size() - free_list_.size(); }
+
+ private:
   struct Slot {
-    uint32_t generation;
+    uint32_t generation = 0;
     std::optional<T> data;
   };
 
-  std::vector<Slot> slots;
-  std::vector<uint32_t> free_list;
-
- public:
-  T* get(Handle<T> handle);
-  Handle<T> insert(T value);
-  void remove(Handle<T> handle);
+  std::vector<Slot> slots_;
+  std::vector<uint32_t> free_list_;
 };
+;
 
 #endif  // ASSET_REGISTRY_H_

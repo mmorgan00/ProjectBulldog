@@ -5,8 +5,8 @@
 
 #include <filesystem>
 
-#include "core/render_engines//vulkan/vulkan_engine.h"
-#include "core/render_engines/vulkan/vulkan_types.h"
+#include "orion/core/render_engines//vulkan/vulkan_engine.h"
+#include "orion/core/render_engines/vulkan/vulkan_types.h"
 
 namespace vkutil {
 std::optional<std::shared_ptr<LoadedGLTF>> loadGltfBinary(
