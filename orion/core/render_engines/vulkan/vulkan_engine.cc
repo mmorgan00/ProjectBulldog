@@ -17,14 +17,14 @@
 #include <vector>
 
 #include "SDL_video.h"
-#include "core/engine_types.h"
-#include "core/render_engines//vulkan/vulkan_loaders.h"
-#include "core/render_engines/vulkan/vulkan_images.h"
-#include "core/render_engines/vulkan/vulkan_initializers.h"
-#include "core/render_engines/vulkan/vulkan_pipelines.h"
-#include "core/render_engines/vulkan/vulkan_types.h"
-#include "render_engines/vulkan/vulkan_descriptors.h"
-#include "util/logger.h"
+#include "orion/core/engine_types.h"
+#include "orion/core/render_engines/vulkan/vulkan_descriptors.h"
+#include "orion/core/render_engines/vulkan/vulkan_images.h"
+#include "orion/core/render_engines/vulkan/vulkan_initializers.h"
+#include "orion/core/render_engines/vulkan/vulkan_loaders.h"
+#include "orion/core/render_engines/vulkan/vulkan_pipelines.h"
+#include "orion/core/render_engines/vulkan/vulkan_types.h"
+#include "orion/util/logger.h"
 
 #define VMA_IMPLEMENTATION
 #define VMA_ASSERT_LEAK
@@ -905,7 +905,7 @@ void VulkanEngine::init_default_data() {
   std::array<uint32_t, 16 * 16> pixels;  // for 16x16 checkerboard texture
   for (int x = 0; x < 16; x++) {
     for (int y = 0; y < 16; y++) {
-      pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? grey : black;
+      pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? grey : magenta;
     }
   }
   _errorCheckerboardImage =
@@ -947,8 +947,8 @@ void VulkanEngine::init_default_data() {
 
   // write the buffer
   GLTFMetallic_Roughness::MaterialConstants* sceneUniformData =
-      (GLTFMetallic_Roughness::MaterialConstants*)
-          materialConstants.allocation->GetMappedData();
+      static_cast<GLTFMetallic_Roughness::MaterialConstants*>(
+          materialConstants.allocation->GetMappedData());
   sceneUniformData->colorFactors = glm::vec4{1, 1, 1, 1};
   sceneUniformData->metal_rough_factors = glm::vec4{1, 0.5, 0, 0};
 

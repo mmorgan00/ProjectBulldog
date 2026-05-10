@@ -5,8 +5,8 @@
 
 #include "SDL_events.h"
 #include "SDL_video.h"
-#include "core/engine_types.h"
-#include "core/renderer.h"
+#include "orion/core/engine_types.h"
+#include "orion/core/renderer.h"
 #include "orion/entry.h"
 #include "orion/util/logger.h"
 

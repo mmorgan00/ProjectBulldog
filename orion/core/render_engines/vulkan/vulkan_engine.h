@@ -2,7 +2,6 @@
 
 #ifndef ORION_CORE_RENDER_ENGINES_VULKAN_VULKAN_ENGINE_H_
 #define ORION_CORE_RENDER_ENGINES_VULKAN_VULKAN_ENGINE_H_
-#include <core/renderer.h>
 #include <vulkan/vulkan_core.h>
 
 #include <memory>
@@ -11,11 +10,12 @@
 #include <unordered_map>
 #include <vector>
 
-#include "core/engine_types.h"
-#include "core/render_engines/vulkan/vulkan_descriptors.h"
-#include "core/render_engines/vulkan/vulkan_types.h"
-#include "entity/camera.h"
-#include "util/logger.h"
+#include "orion/core/engine_types.h"
+#include "orion/core/render_engines/vulkan/vulkan_descriptors.h"
+#include "orion/core/render_engines/vulkan/vulkan_types.h"
+#include "orion/core/renderer.h"
+#include "orion/entity/camera.h"
+#include "orion/util/logger.h"
 
 DECLARE_LOG_CATEGORY(VULKAN_ENGINE);
 
@@ -121,7 +121,7 @@ class VulkanEngine : public RenderEngine {
   std::array<VkFence, MAX_CONCURRENT_FRAMES> waitFences{};
 
   VkQueue _graphicsQueue;
-  uint32_t _graphicsQueueFamily;
+  uint32_t _graphicsQueueFamily = 0;
 
   void init_vulkan(app_state& state);
   void init_swapchain();
@@ -141,7 +141,7 @@ class VulkanEngine : public RenderEngine {
 
   GPUSceneData sceneData;
 
-  Camera* mainCamera;
+  Camera* mainCamera = 0;
 
   // Immediates
   VkFence _immFence;
@@ -185,7 +185,6 @@ class VulkanEngine : public RenderEngine {
   bool init(app_state& state) override;
   void loadScene(std::string_view fileName) override;
   std::shared_ptr<RenderComponent> loadObject() override;
-
 
   DeletionQueue _mainDeletionQueue;
 

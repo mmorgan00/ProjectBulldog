@@ -1,14 +1,35 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
-project(ProjectBulldog)
+project(ProjectBulldog CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_subdirectory(third_party)
+add_subdirectory(orion)
+add_subdirectory(sandbox)
+
+option(ORION_BUILD_TESTS "Build Orion unit tests" ON)
+
+if(ORION_BUILD_TESTS)
+  include(FetchContent)
+  FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG        v1.14.0
+  )
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(googletest)
+
+  enable_testing()
+  add_subdirectory(tests)
+endif()
+
+
 
 find_package(Vulkan REQUIRED)
 find_package(simdjson REQUIRED)
 
-add_subdirectory(sandbox)
-
-add_subdirectory(third_party)
-add_subdirectory(orion)
 
 find_program(SLANGC slangc HINTS /usr/bin /usr/local/bin $ENV{VULKAN_SDK}/Bin/ $ENV{VULKAN_SDK}/Bin32/)
 file(GLOB_RECURSE SLANG_SOURCE_FILES
@@ -38,3 +59,5 @@ add_custom_target(
     Shaders 
     DEPENDS ${SPIRV_BINARY_FILES}
     )
+
+

@@ -1,0 +1,4 @@
+Diagnostics:
+  ClangTidy:
+    Add: [google-*, bugprone-*, performance-*, readability-*]
+    Remove: [google-readability-todo]

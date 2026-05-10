@@ -7,8 +7,8 @@
 #include <string>
 #include <string_view>
 
-#include "core/engine_types.h"
-#include "entity/camera.h"
+#include "orion/core/engine_types.h"
+#include "orion/entity/camera.h"
 
 class RenderComponent;
 class RenderEngine;

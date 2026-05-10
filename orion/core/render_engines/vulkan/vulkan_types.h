@@ -2,8 +2,6 @@
 #ifndef ORION_CORE_RENDER_ENGINES_VULKAN_VULKAN_TYPES_H_
 #define ORION_CORE_RENDER_ENGINES_VULKAN_VULKAN_TYPES_H_
 
-#include <util/containers.h>
-#include <util/logger.h>
 #include <vk_mem_alloc.h>
 #include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vulkan.h>
@@ -12,7 +10,9 @@
 #include <string>
 #include <vector>
 
-#include "render_engines/vulkan/vulkan_descriptors.h"
+#include "orion/core/render_engines/vulkan/vulkan_descriptors.h"
+#include "orion/util/containers.h"
+#include "orion/util/logger.h"
 
 typedef enum MaterialPass : uint8_t {
   MainColor,
@@ -62,7 +62,7 @@ struct Node : public IRenderable {
     }
   }
 
-  virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx) {
+  virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx) override {
     // draw children
     for (auto& c : children) {
       c->Draw(topMatrix, ctx);

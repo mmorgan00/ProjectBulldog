@@ -1,14 +1,13 @@
 // Copyright 2025 Max Morgan
 
-#include "core/renderer.h"
-
-#include <entity/camera.h>
+#include "orion/core/renderer.h"
 
 #include <memory>
 #include <string>
 
-#include "core/render_engines/vulkan/vulkan_engine.h"
-#include "util/logger.h"
+#include "orion/core/render_engines/vulkan/vulkan_engine.h"
+#include "orion/entity/camera.h"
+#include "orion/util/logger.h"
 
 void Renderer::init(app_state& state) {
   if (state.graphicsAPI == "Vulkan") {

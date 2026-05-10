@@ -13,8 +13,8 @@
 
 #include "fastgltf/types.hpp"
 #include "glm/gtx/quaternion.hpp"
+#include "orion/core/render_engines/vulkan/vulkan_types.h"
 #include "orion/util/logger.h"
-#include "render_engines/vulkan/vulkan_types.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "third_party/stb_image/stb_image.h"
@@ -28,7 +28,7 @@ std::optional<AllocatedImage> load_image(VulkanEngine* engine,
 
   std::visit(
       fastgltf::visitor{
-          [](auto& arg) {},
+          [](const auto& arg) {},
           [&](fastgltf::sources::URI& filePath) {
             assert(filePath.fileByteOffset ==
                    0);  // We don't support offsets with stbi.
@@ -79,7 +79,7 @@ std::optional<AllocatedImage> load_image(VulkanEngine* engine,
                     // We only care about VectorWithMime here, because we
                     // specify LoadExternalBuffers, meaning all buffers
                     // are already loaded into a vector.
-                    [](auto& arg) {},
+                    [](const auto& arg) {},
                     [&](fastgltf::sources::Array& array) {
                       unsigned char* data = stbi_load_from_memory(
                           reinterpret_cast<const unsigned char*>(
@@ -272,8 +272,8 @@ std::optional<std::shared_ptr<LoadedGLTF>> vkutil::loadGltfBinary(
 
   int data_index = 0;
   GLTFMetallic_Roughness::MaterialConstants* sceneMaterialConstants =
-      (GLTFMetallic_Roughness::MaterialConstants*)
-          file.materialDataBuffer.info.pMappedData;
+      static_cast<GLTFMetallic_Roughness::MaterialConstants*>(
+          file.materialDataBuffer.info.pMappedData);
 
   for (fastgltf::Material& mat : gltf.materials) {
     std::shared_ptr<GLTFMaterial> newMat = std::make_shared<GLTFMaterial>();
@@ -382,10 +382,11 @@ std::optional<std::shared_ptr<LoadedGLTF>> vkutil::loadGltfBinary(
 
       // load vertex normals
       auto normals = p.findAttribute("NORMAL");
-      fastgltf::Accessor& normalAccessor =
-          gltf.accessors[normals->accessorIndex];
 
       if (normals != p.attributes.end()) {
+        fastgltf::Accessor& normalAccessor =
+            gltf.accessors[normals->accessorIndex];
+
         fastgltf::iterateAccessorWithIndex<glm::vec3>(
             gltf, normalAccessor, [&](glm::vec3 v, size_t index) {
               vertices[initial_vtx + index].normal = v;
@@ -394,9 +395,9 @@ std::optional<std::shared_ptr<LoadedGLTF>> vkutil::loadGltfBinary(
 
       // load UVs
       auto uv = p.findAttribute("TEXCOORD_0");
-      fastgltf::Accessor& uvAccessor = gltf.accessors[uv->accessorIndex];
 
       if (uv != p.attributes.end()) {
+        fastgltf::Accessor& uvAccessor = gltf.accessors[uv->accessorIndex];
         fastgltf::iterateAccessorWithIndex<glm::vec2>(
             gltf, uvAccessor, [&](glm::vec2 v, size_t index) {
               vertices[initial_vtx + index].uv_x = v.x;
@@ -406,9 +407,10 @@ std::optional<std::shared_ptr<LoadedGLTF>> vkutil::loadGltfBinary(
 
       // load vertex colors
       auto colors = p.findAttribute("COLOR_0");
-      fastgltf::Accessor& colorAccessor = gltf.accessors[colors->accessorIndex];
 
       if (colors != p.attributes.end()) {
+        fastgltf::Accessor& colorAccessor =
+            gltf.accessors[colors->accessorIndex];
         fastgltf::iterateAccessorWithIndex<glm::vec4>(
             gltf, colorAccessor, [&](glm::vec4 v, size_t index) {
               vertices[initial_vtx + index].color = v;
@@ -567,10 +569,10 @@ std::optional<std::vector<std::shared_ptr<MeshAsset>>> vkutil::loadMeshGLB(
       {
         // load vertex normals
         auto normals = p.findAttribute("NORMAL");
-        fastgltf::Accessor& normalAccessor =
-            gltf.accessors[normals->accessorIndex];
-
         if (normals != p.attributes.end()) {
+          fastgltf::Accessor& normalAccessor =
+              gltf.accessors[normals->accessorIndex];
+
           fastgltf::iterateAccessorWithIndex<glm::vec3>(
               gltf, normalAccessor, [&](glm::vec3 v, size_t index) {
                 vertices[initial_vtx + index].normal = v;
@@ -580,9 +582,9 @@ std::optional<std::vector<std::shared_ptr<MeshAsset>>> vkutil::loadMeshGLB(
 
       // load UVs
       auto uv = p.findAttribute("TEXCOORD_0");
-      fastgltf::Accessor& uvAccessor = gltf.accessors[uv->accessorIndex];
 
       if (uv != p.attributes.end()) {
+        fastgltf::Accessor& uvAccessor = gltf.accessors[uv->accessorIndex];
         fastgltf::iterateAccessorWithIndex<glm::vec2>(
             gltf, uvAccessor, [&](glm::vec2 v, size_t index) {
               vertices[initial_vtx + index].uv_x = v.x;
@@ -591,9 +593,10 @@ std::optional<std::vector<std::shared_ptr<MeshAsset>>> vkutil::loadMeshGLB(
       }
       // load vertex colors
       auto colors = p.findAttribute("COLOR_0");
-      fastgltf::Accessor& colorAccessor = gltf.accessors[colors->accessorIndex];
 
       if (colors != p.attributes.end()) {
+        fastgltf::Accessor& colorAccessor =
+            gltf.accessors[colors->accessorIndex];
         fastgltf::iterateAccessorWithIndex<glm::vec4>(
             gltf, colorAccessor, [&](glm::vec4 v, size_t index) {
               vertices[initial_vtx + index].color = v;
