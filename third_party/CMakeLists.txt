@@ -14,6 +14,7 @@ add_library(stb_image INTERFACE)
 add_subdirectory(fastgltf)
 add_subdirectory(fmt EXCLUDE_FROM_ALL)
 add_subdirectory(SDL EXCLUDE_FROM_ALL)
+add_subdirectory(entt)
 
 
 target_sources(vkbootstrap PRIVATE 

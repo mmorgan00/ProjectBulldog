@@ -14,9 +14,7 @@ void Camera::update() {
 }
 
 void Camera::handleInputEvent(SDL_Event& e) {
-
   if (e.type == SDL_KEYDOWN) {
-
     if (e.key.keysym.sym == SDLK_w) {
       velocity.z = -1;
     }
@@ -32,7 +30,6 @@ void Camera::handleInputEvent(SDL_Event& e) {
   }
 
   if (e.type == SDL_KEYUP) {
-
     if (e.key.keysym.sym == SDLK_w) {
       velocity.z = 0;
     }

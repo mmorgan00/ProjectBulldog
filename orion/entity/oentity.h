@@ -4,6 +4,8 @@
 
 #include <SDL.h>
 
+#include <entt/entt.hpp>
+
 class OEntity {
  public:
   virtual void update() = 0;

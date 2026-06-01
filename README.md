@@ -130,18 +130,15 @@ class Renderer {
 - [ ] scene graph declaration
   - Renderer supports calling 'loadScene()' in code however this requires a recompile and running, and some sort of data file edit and rerunning is the target
   - Further progress will have object, mesh files, script referencing, materials, and so on, that is assembled into a scene graph.
-- [ ] ECS/Actor system
-  - The aim is an OOP driven class sytem:
-    - Nodes in the scene graph can be labeled with an actor name
-    - That actor class is then loaded as part of the graph creation, and any components
-    - Futher components on that node can be attached different actors, or components
-    - This is pulling a lot of inspiration fromm Unreal Engine's system, which I am quite a fan of
-- [ ] Physics system
+- [ ] ECS system 
+  - Previously labeled 'ECS/Actor' which are not the same. Decision at this point has been made to use ECS via Flecs library.
+  - I have found I have less of an appetite for deeply nested OOP hierarchies. 
+- [ ] Physics system (targeted to use Jolt)
   - At minimum, giving actors the ability to move around and a basic collision system.
 - [ ] Audio
 - [x] PBR Material support
   - Basic PBR rendering according to gltf file spec is supported
-- [ ] Rendering improvements
+- [ ] Rendering improvements (in progress)
   - This will likely be a continual area of focus, however for now we have GLTF loading/rendering and very basic lighting. This should carry for a good amount of time while other features are implemented
   - More lights
 - [ ] Multi-API graphics
@@ -151,6 +148,11 @@ class Renderer {
   - [ ] DirectX
   - [ ] OpenGL -> for if I want to support older devices that don't support vulkan 1.3
   - [ ] Metal -> Apple support is something I would like to do at some point, but is not a priority
+
+### Current development focus:
+ 1. Deferred Rendering core loop
+ 2. SSAO post-process, to take advantage of the G Buffer implementation from defferred
+ 3. Libraries for 'other engine func' (flecs for ECS, Jolt for physics is the thought).
 
 ### Building and running the demo
 

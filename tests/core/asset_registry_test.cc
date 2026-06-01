@@ -66,8 +66,8 @@ TEST(AssetRegistry, GetWithOutOfBoundsIndexReturnsNull) {
   AssetRegistry<std::string> registry;
   auto handle1 = registry.insert("lorem");
   const uint32_t oob_index = 50;
-  Handle<std::string> invalid_handle =
-      Handle<std::string>{.index = oob_index, .generation = 1};
+  Resource<std::string> invalid_handle =
+      Resource<std::string>{.index = oob_index, .generation = 1};
   EXPECT_EQ(registry.get(invalid_handle), nullptr);
 }
 

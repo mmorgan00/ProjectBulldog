@@ -33,6 +33,7 @@ target_compile_features(orion PUBLIC cxx_std_20)
 
 target_compile_definitions(orion PUBLIC GLM_FORCE_DEPTH_ZERO_TO_ONE)
 
-target_link_libraries(orion PUBLIC vma glm vkbootstrap stb_image Vulkan::Vulkan SDL2::SDL2 fmt::fmt simdjson::simdjson fastgltf::fastgltf imgui nlohmann)
+target_link_libraries(orion PUBLIC vma glm vkbootstrap stb_image Vulkan::Vulkan SDL2::SDL2 fmt::fmt
+  simdjson::simdjson fastgltf::fastgltf EnTT::EnTT imgui nlohmann)
 
 target_precompile_headers(orion PUBLIC <optional> <vector> <memory> <string> <unordered_map> <glm/mat4x4.hpp> <vulkan/vulkan.h>)
