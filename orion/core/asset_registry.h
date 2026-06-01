@@ -6,35 +6,35 @@
 #include <vector>
 
 template <typename T>
-struct Handle {
+struct Resource {
   uint32_t index = 0;
   uint32_t generation = 0;
 
   // Default-constructed handle is invalid (generation 0 is never handed out).
   bool valid() const { return generation != 0; }
 
-  bool operator==(const Handle& other) const {
+  bool operator==(const Resource& other) const {
     return index == other.index && generation == other.generation;
   }
-  bool operator!=(const Handle& other) const { return !(*this == other); }
+  bool operator!=(const Resource& other) const { return !(*this == other); }
 };
 
 template <typename T>
 class AssetRegistry {
  public:
-  Handle<T> insert(T value) {
+  Resource<T> insert(T value) {
     if (!free_list_.empty()) {
       uint32_t idx = free_list_.back();
       free_list_.pop_back();
       slots_[idx].data = std::move(value);
       // generation was already bumped when this slot was freed
-      return Handle<T>{idx, slots_[idx].generation};
+      return Resource<T>{idx, slots_[idx].generation};
     }
     slots_.push_back(Slot{1, std::move(value)});
-    return Handle<T>{static_cast<uint32_t>(slots_.size() - 1), 1};
+    return Resource<T>{static_cast<uint32_t>(slots_.size() - 1), 1};
   }
 
-  T* get(Handle<T> handle) {
+  T* get(Resource<T> handle) {
     if (handle.index >= slots_.size()) {
       return nullptr;
     }
@@ -48,7 +48,7 @@ class AssetRegistry {
     return &*slot.data;
   }
 
-  const T* get(Handle<T> handle) const {
+  const T* get(Resource<T> handle) const {
     if (handle.index >= slots_.size()) {
       return nullptr;
     }
@@ -62,7 +62,7 @@ class AssetRegistry {
     return &*slot.data;
   }
 
-  bool remove(Handle<T> handle) {
+  bool remove(Resource<T> handle) {
     if (get(handle) == nullptr) {
       return false;
     }
