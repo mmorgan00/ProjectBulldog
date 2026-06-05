@@ -23,6 +23,7 @@ add_library(orion STATIC
   entity/camera.h
   entity/camera.cc
   core/asset_registry.h
+  asset/primitives.h
 )
 find_package(Vulkan REQUIRED)
 find_package(simdjson REQUIRED)
