@@ -18,6 +18,10 @@ int main(int argc, char *argv[]) {
   simdjson::padded_string json =
       simdjson::padded_string::load("../../config/engine.conf");
   simdjson::ondemand::document config = parser.iterate(json);
+  std::string_view graphicsAPI_sv = config["graphicsAPI"].get_string();
+  std::string_view entry_scene_sv = config["entryScene"].get_string();
+  std::string graphicsAPI = std::string(graphicsAPI_sv);
+  std::string entry_scene = std::string(entry_scene_sv);
 
   state.build(config);
 
@@ -29,8 +33,8 @@ int main(int argc, char *argv[]) {
   mainCamera.pitch = 0;
   mainCamera.yaw = 0;
 
-  OE_LOG(ORION, INFO, "{}", std::string(state.appName));
-  OE_LOG(ORION, INFO, "Running using {}", std::string(config["graphicsAPI"]));
+  OE_LOG(ORION, INFO, "{}", state.appName);
+  OE_LOG(ORION, INFO, "Running using {}", graphicsAPI);
   // Init modules
   Renderer renderer;
   renderer.init(state);
@@ -38,9 +42,8 @@ int main(int argc, char *argv[]) {
   // Call game initialization
   init();
 
-  OE_LOG(ORION, INFO, "Loading initial scene {}",
-         std::string(config["entryScene"]));
-  renderer.loadScene(std::string(config["entryScene"]));
+  OE_LOG(ORION, INFO, "Loading initial scene {}", entry_scene);
+  renderer.loadScene(entry_scene);
 
   // Main loop
   bool bQuit = false;

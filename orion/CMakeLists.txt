@@ -26,7 +26,6 @@ add_library(orion STATIC
   asset/primitives.h
 )
 find_package(Vulkan REQUIRED)
-find_package(simdjson REQUIRED)
 
 target_include_directories(orion PUBLIC ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/third_party)
 
