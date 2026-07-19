@@ -32,7 +32,7 @@
 
 VulkanEngine* loadedEngine = nullptr;
 
-bool VulkanEngine::init(app_state& state) {
+bool VulkanEngine::init(AppState& state) {
   // We initialize SDL and create a window with it.
   SDL_Init(SDL_INIT_VIDEO);
 
@@ -542,7 +542,7 @@ GPUMeshBuffers VulkanEngine::uploadMesh(std::span<uint32_t> indices,
 //> Buffer management
 
 //< Initializations
-void VulkanEngine::init_vulkan(app_state& state) {
+void VulkanEngine::init_vulkan(AppState& state) {
   vkb::InstanceBuilder builder;
 
   // make the vulkan instance, with basic debug features

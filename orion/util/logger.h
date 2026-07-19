@@ -18,6 +18,7 @@ enum class LOG_LEVEL {
   ERROR,  // Errors that need attention
   WARN,   // Potential issues
   INFO,   // General information
+  DEBUG,  // "Simple" debug information
   TRACE   // Detailed debug information
 };
 
@@ -59,6 +60,10 @@ class Logger {
     void TRACE(fmt::format_string<Args...> format, Args &&...args) const {
       Log(LOG_LEVEL::TRACE, format, std::forward<Args>(args)...);
     }
+    template <typename... Args>
+    void DEBUG(fmt::format_string<Args...> format, Args &&...args) const {
+      Log(LOG_LEVEL::DEBUG, format, std::forward<Args>(args)...);
+    }
 
    private:
     std::string name_;
@@ -78,7 +83,7 @@ class Logger {
 
  private:
   // TODO: Make configurable from ini file, to enable ''
-  Logger() : minVerbosity_(LOG_LEVEL::INFO) {}
+  Logger() : minVerbosity_(LOG_LEVEL::DEBUG) {}
 
   template <typename... Args>
   void LogImpl(const std::string &category, LOG_LEVEL verbosity,
@@ -123,6 +128,8 @@ class Logger {
         return "WARN";
       case LOG_LEVEL::INFO:
         return "INFO";
+      case LOG_LEVEL::DEBUG:
+        return "DEBUG";
       case LOG_LEVEL::TRACE:
         return "TRACE";
       default:
@@ -146,6 +153,9 @@ class Logger {
       case LOG_LEVEL::INFO:
         color = "\033[32m";
         break;  // Green
+      case LOG_LEVEL::DEBUG:
+        color = "\033[35m";
+        break;  // Magenta
       case LOG_LEVEL::TRACE:
         color = "\033[36m";
         break;  // Cyan
@@ -166,7 +176,6 @@ class Logger {
 
 #define OE_LOG(Category, Verbosity, Format, ...) \
   Category.Verbosity(Format, ##__VA_ARGS__);
-
 
 DECLARE_LOG_CATEGORY(RENDERER);
 DECLARE_LOG_CATEGORY(CORE);

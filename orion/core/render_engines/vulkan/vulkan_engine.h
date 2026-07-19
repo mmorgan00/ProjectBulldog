@@ -35,11 +35,11 @@ struct MeshNode : public Node {
 };
 
 struct RenderObject {
-  uint32_t indexCount;
-  uint32_t firstIndex;
+  uint32_t indexCount = 0;
+  uint32_t firstIndex = 0;
   VkBuffer indexBuffer;
 
-  MaterialInstance* material;
+  MaterialInstance* material = nullptr;
 
   glm::mat4 transform;
   VkDeviceAddress vertexBufferAddress;
@@ -71,7 +71,7 @@ struct GLTFMetallic_Roughness {
     AllocatedImage metalRoughImage;
     VkSampler metalRoughSampler;
     VkBuffer dataBuffer;
-    uint32_t dataBufferOffset;
+    uint32_t dataBufferOffset = 0;
   };
 
   DescriptorWriter writer;
@@ -123,7 +123,7 @@ class VulkanEngine : public RenderEngine {
   VkQueue _graphicsQueue;
   uint32_t _graphicsQueueFamily = 0;
 
-  void init_vulkan(app_state& state);
+  void init_vulkan(AppState& state);
   void init_swapchain();
   void resize_swapchain();
   void init_commands();
@@ -182,7 +182,7 @@ class VulkanEngine : public RenderEngine {
   VkPipelineLayout _defaultPipelineLayout;
   VkPipeline _defaultPipeline;
 
-  bool init(app_state& state) override;
+  bool init(AppState& state) override;
   void loadScene(std::string_view fileName) override;
   std::shared_ptr<RenderComponent> loadObject() override;
 
@@ -260,7 +260,7 @@ struct LoadedGLTF : IRenderable {
 
   AllocatedBuffer materialDataBuffer;
 
-  VulkanEngine* creator;
+  VulkanEngine* creator = nullptr;
 
   ~LoadedGLTF() { clearAll(); }
 

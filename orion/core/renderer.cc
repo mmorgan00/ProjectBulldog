@@ -9,7 +9,7 @@
 #include "orion/entity/camera.h"
 #include "orion/util/logger.h"
 
-void Renderer::init(app_state& state) {
+void Renderer::init(AppState& state) {
   if (state.graphicsAPI == "Vulkan") {
     engine = std::make_unique<VulkanEngine>();
     engine->init(state);

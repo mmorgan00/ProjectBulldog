@@ -18,7 +18,7 @@ class Renderer {
   /**
    * @brief initializes any render specific resources
    */
-  void init(app_state& state);
+  void init(AppState& state);
   /**
    * @brief Cleans up any rendering specific resources
    */
@@ -52,7 +52,7 @@ class RenderEngine {
   /**
    * @brief Initialize rendering resources, including render pipelines
    */
-  virtual bool init(app_state& state) = 0;
+  virtual bool init(AppState& state) = 0;
   virtual ~RenderEngine() = default;
   virtual void loadScene(std::string_view fileName) = 0;
   virtual std::shared_ptr<RenderComponent> loadObject() = 0;

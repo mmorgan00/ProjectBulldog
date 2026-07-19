@@ -8,7 +8,7 @@
 
 constexpr int MAX_CONCURRENT_FRAMES = 2;
 
-typedef struct app_state {
+typedef struct AppState {
   std::string appName;
   std::string graphicsAPI;
 
@@ -28,6 +28,6 @@ typedef struct app_state {
           "Failed to parse graphicsAPI or it is not a string");
     }
   }
-} app_state;
+} AppState;
 
 #endif  // ORION_CORE_ENGINE_TYPES_H_

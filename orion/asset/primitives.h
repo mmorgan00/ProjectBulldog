@@ -3,13 +3,13 @@
 
 #include "glm/fwd.hpp"
 
-struct Vertex {
+struct Vert {
   glm::vec3 position;
   glm::vec3 normal;
 };
 
 struct Primitive {
-  std::vector<Vertex> vertices;
+  std::vector<Vert> vertices;
   std::vector<uint32_t> indices;
 };
 
