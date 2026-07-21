@@ -60,6 +60,7 @@ int main(int argc, char *argv[]) {
          handle.generation);
   OE_LOG(ORION, DEBUG, "Static Mesh registry entry retrieval name {}",
          staticMeshRegistry.get(handle)->name);
+  renderer.loadStaticMesh(staticMeshRegistry.get(handle));
 
   // Main loop
   bool bQuit = false;

@@ -4,10 +4,10 @@
 #define ORION_CORE_RENDERER_H_
 
 #include <memory>
-#include <string>
 #include <string_view>
 
 #include "orion/core/engine_types.h"
+#include "orion/core/resource_types/static_mesh.h"
 #include "orion/entity/camera.h"
 
 class RenderComponent;
@@ -27,6 +27,11 @@ class Renderer {
    * @brief Draws the next frame
    */
   void draw();
+
+  /**
+   * @brief Load a single static mesh
+   **/
+  void loadStaticMesh(StaticMesh* mesh);
 
   /**
    * @brief load a single Scene to be rendered
@@ -54,6 +59,7 @@ class RenderEngine {
    */
   virtual bool init(AppState& state) = 0;
   virtual ~RenderEngine() = default;
+  // virtual void loadObject(RenderObject object) = 0;
   virtual void loadScene(std::string_view fileName) = 0;
   virtual std::shared_ptr<RenderComponent> loadObject() = 0;
   virtual void set_camera(Camera* camera) = 0;

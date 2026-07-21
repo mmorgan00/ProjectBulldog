@@ -6,6 +6,7 @@
 #include <string>
 
 #include "orion/core/render_engines/vulkan/vulkan_engine.h"
+#include "orion/core/resource_types/static_mesh.h"
 #include "orion/entity/camera.h"
 #include "orion/util/logger.h"
 
@@ -50,4 +51,8 @@ void Renderer::cleanup() {
 // Render Component
 RenderComponent::RenderComponent(RenderEngine* renderEngine) {
   this->engine = renderEngine;
+}
+
+void Renderer::loadStaticMesh(StaticMesh* mesh) {
+  // this->engine->loadStaticMesh();
 }
