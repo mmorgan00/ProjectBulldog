@@ -52,7 +52,8 @@ int main(int argc, char *argv[]) {
   renderer.loadScene(entry_scene);
   AssetRegistry<StaticMesh> staticMeshRegistry;
   Primitive cube = primitives::cube();
-  StaticMesh cube_sm = StaticMesh{.name = "Test", .vertices = cube.vertices};
+  StaticMesh cube_sm = StaticMesh{
+      .name = "Test", .vertices = cube.vertices, .indices = cube.indices};
   Resource<StaticMesh> handle = staticMeshRegistry.insert(cube_sm);
   OE_LOG(ORION, DEBUG, "Static Mesh registry size {}",
          staticMeshRegistry.size());

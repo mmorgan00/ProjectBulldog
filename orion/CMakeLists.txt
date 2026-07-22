@@ -24,6 +24,7 @@ add_library(orion STATIC
   entity/camera.cc
   core/asset_registry.h
   asset/primitives.h
+  asset/primitives.cc
 )
 find_package(Vulkan REQUIRED)
 

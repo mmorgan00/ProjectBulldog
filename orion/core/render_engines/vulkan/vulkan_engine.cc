@@ -32,6 +32,9 @@
 
 VulkanEngine* loadedEngine = nullptr;
 
+// TODO: Implement
+void VulkanEngine::loadObject(const engine::MeshAsset) {};
+
 bool VulkanEngine::init(AppState& state) {
   // We initialize SDL and create a window with it.
   SDL_Init(SDL_INIT_VIDEO);

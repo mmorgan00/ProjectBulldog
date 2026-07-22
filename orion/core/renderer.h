@@ -7,6 +7,7 @@
 #include <string_view>
 
 #include "orion/core/engine_types.h"
+#include "orion/core/renderer_types.h"
 #include "orion/core/resource_types/static_mesh.h"
 #include "orion/entity/camera.h"
 
@@ -59,7 +60,7 @@ class RenderEngine {
    */
   virtual bool init(AppState& state) = 0;
   virtual ~RenderEngine() = default;
-  // virtual void loadObject(RenderObject object) = 0;
+  virtual void loadObject(engine::MeshAsset object) = 0;
   virtual void loadScene(std::string_view fileName) = 0;
   virtual std::shared_ptr<RenderComponent> loadObject() = 0;
   virtual void set_camera(Camera* camera) = 0;

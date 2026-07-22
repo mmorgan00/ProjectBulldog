@@ -14,6 +14,7 @@
 #include "orion/core/render_engines/vulkan/vulkan_descriptors.h"
 #include "orion/core/render_engines/vulkan/vulkan_types.h"
 #include "orion/core/renderer.h"
+#include "orion/core/renderer_types.h"
 #include "orion/entity/camera.h"
 #include "orion/util/logger.h"
 
@@ -185,6 +186,7 @@ class VulkanEngine : public RenderEngine {
   bool init(AppState& state) override;
   void loadScene(std::string_view fileName) override;
   std::shared_ptr<RenderComponent> loadObject() override;
+  void loadObject(engine::MeshAsset asset) override;
 
   DeletionQueue _mainDeletionQueue;
 

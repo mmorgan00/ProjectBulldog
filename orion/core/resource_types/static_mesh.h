@@ -4,9 +4,10 @@
 #include "orion/asset/primitives.h"
 
 typedef struct StaticMesh {
-public:
+ public:
   std::string name;
   std::vector<Vert> vertices;
+  std::vector<uint32_t> indices;
 } StaticMesh;
 
 #endif  // CORE_RESOURCE_TYPES_STATIC_MESH_H_
