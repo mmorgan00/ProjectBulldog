@@ -3,13 +3,16 @@
 
 #include "glm/fwd.hpp"
 
-struct Vert {
+struct Vertex {
   glm::vec3 position;
+  float uv_x = 0.F;
   glm::vec3 normal;
+  float uv_y = 0.F;
+  glm::vec4 color;
 };
 
 struct Primitive {
-  std::vector<Vert> vertices;
+  std::vector<Vertex> vertices;
   std::vector<uint32_t> indices;
 };
 

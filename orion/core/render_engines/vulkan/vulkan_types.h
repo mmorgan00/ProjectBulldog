@@ -32,9 +32,9 @@ struct MaterialPipeline {
  * @param passType - used for draw ordering
  */
 struct MaterialInstance {
-  MaterialPipeline* pipeline;
+  MaterialPipeline* pipeline = nullptr;
   VkDescriptorSet materialSet;
-  MaterialPass passType;
+  MaterialPass passType = MaterialPass::MainColor;
 };
 
 struct DrawContext;
@@ -108,14 +108,6 @@ struct AllocatedBuffer {
   VmaAllocationInfo info;    // Allocation metadata, needed for cleanup
 };
 
-struct Vertex {
-  glm::vec3 position;
-  float uv_x;
-  glm::vec3 normal;
-  float uv_y;
-  glm::vec4 color;
-};
-
 // holds the resources needed for a mesh
 
 struct GPUMeshBuffers {
@@ -129,8 +121,8 @@ struct GLTFMaterial {
 };
 
 struct GeoSurface {
-  uint32_t startIndex;
-  uint32_t count;
+  uint32_t startIndex = 0;
+  uint32_t count = 0;
   std::shared_ptr<GLTFMaterial> material;
 };
 

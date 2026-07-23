@@ -33,7 +33,15 @@
 VulkanEngine* loadedEngine = nullptr;
 
 // TODO: Implement
-void VulkanEngine::loadObject(const engine::MeshAsset) {};
+void VulkanEngine::loadObject(engine::MeshAsset mesh) {
+  std::shared_ptr<MeshAsset> newmesh = std::make_shared<MeshAsset>();
+  for (auto s : mesh.surfaces) {
+    newmesh->meshBuffers = this->uploadMesh(mesh.meshBuffers.indexBuffer,
+                                            mesh.meshBuffers.vertexBuffer);
+  }
+
+  // mainDrawContext.OpaqueSurfaces.push_back(newmesh);
+};
 
 bool VulkanEngine::init(AppState& state) {
   // We initialize SDL and create a window with it.
@@ -200,6 +208,8 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
     vkCmdDrawIndexed(cmd, draw.indexCount, 1, draw.firstIndex, 0, 0);
   };
 
+  // TODO: Hardcoded to one opaque pass and one transparent pass. Should at some
+  // point support multiple materials
   for (auto& r : mainDrawContext.OpaqueSurfaces) {
     draw(r);
   }
@@ -207,6 +217,7 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
   for (auto& r : mainDrawContext.TransparentSurfaces) {
     draw(r);
   }
+  // end TODO
 
   vkCmdEndRendering(cmd);
   // we delete the draw commands now that we processed them

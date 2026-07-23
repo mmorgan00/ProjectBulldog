@@ -207,6 +207,7 @@ class VulkanEngine : public RenderEngine {
 
   // End TODO
 
+  std::unordered_map<std::string, std::shared_ptr<RenderObject>> renderObjects;
   std::unordered_map<std::string, std::shared_ptr<LoadedGLTF>> loadedScenes;
   VkSampler _defaultSamplerLinear;
   VkSampler _defaultSamplerNearest;

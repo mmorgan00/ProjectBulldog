@@ -13,7 +13,7 @@
 namespace engine {
 struct MeshBuffers {
   std::vector<uint32_t> indexBuffer;
-  std::vector<Vert> vertexBuffer;
+  std::vector<Vertex> vertexBuffer;
 };
 
 struct Material {
