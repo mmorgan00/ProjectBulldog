@@ -10,8 +10,9 @@
 #include "orion/core/renderer_types.h"
 #include "orion/core/resource_types/static_mesh.h"
 #include "orion/entity/camera.h"
-
-class RenderComponent;
+// Forward declaring here, each RendererBackend will have it's own
+// implementation (GPU allocation types)
+class RenderObject;
 class RenderEngine;
 
 class Renderer {
@@ -32,12 +33,7 @@ class Renderer {
   /**
    * @brief Load a single static mesh
    **/
-  void loadStaticMesh(StaticMesh* mesh);
-
-  /**
-   * @brief load a single Scene to be rendered
-   */
-  std::shared_ptr<RenderComponent> loadScene(std::string_view fileName);
+  RenderObject* loadStaticMesh(StaticMesh* mesh);
 
   /**
    * @brief resize the window
@@ -61,8 +57,9 @@ class RenderEngine {
   virtual bool init(AppState& state) = 0;
   virtual ~RenderEngine() = default;
   virtual void loadObject(engine::MeshAsset object) = 0;
+  virtual RenderObject* uploadMesh(engine::MeshAsset mesh) = 0;
   virtual void loadScene(std::string_view fileName) = 0;
-  virtual std::shared_ptr<RenderComponent> loadObject() = 0;
+  // virtual std::shared_ptr<RenderComponent> loadObject() = 0;
   virtual void set_camera(Camera* camera) = 0;
   virtual void draw() = 0;
   virtual void cleanup() = 0;
@@ -70,12 +67,12 @@ class RenderEngine {
   bool resize_requested{false};
 };
 
-class RenderComponent {
- public:
-  explicit RenderComponent(RenderEngine* renderEngine);
+// class RenderComponent {
+//  public:
+//   explicit RenderComponent(RenderEngine* renderEngine);
 
- private:
-  RenderEngine* engine;
-};
+//  private:
+//   RenderEngine* engine;
+// };
 
 #endif  // ORION_CORE_RENDERER_H_

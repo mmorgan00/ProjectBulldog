@@ -8,7 +8,6 @@
 #include "orion/asset/primitives.h"
 #include "orion/core/asset_registry.h"
 #include "orion/core/engine_types.h"
-#include "orion/core/render_engines/vulkan/vulkan_types.h"
 #include "orion/core/renderer.h"
 #include "orion/core/resource_types/static_mesh.h"
 #include "orion/entity/camera.h"
@@ -49,12 +48,13 @@ int main(int argc, char *argv[]) {
   init();
 
   OE_LOG(ORION, INFO, "Loading initial scene {}", entry_scene);
-  renderer.loadScene(entry_scene);
+  // renderer.loadScene(entry_scene);
   AssetRegistry<StaticMesh> staticMeshRegistry;
   Primitive cube = primitives::cube();
   StaticMesh cube_sm = StaticMesh{
       .name = "Test", .vertices = cube.vertices, .indices = cube.indices};
   Resource<StaticMesh> handle = staticMeshRegistry.insert(cube_sm);
+
   OE_LOG(ORION, DEBUG, "Static Mesh registry size {}",
          staticMeshRegistry.size());
   OE_LOG(ORION, DEBUG, "Static Mesh registry entry generation {}",

@@ -185,9 +185,9 @@ class VulkanEngine : public RenderEngine {
 
   bool init(AppState& state) override;
   void loadScene(std::string_view fileName) override;
-  std::shared_ptr<RenderComponent> loadObject() override;
   void loadObject(engine::MeshAsset asset) override;
 
+  RenderObject* uploadMesh(engine::MeshAsset mesh) override;
   DeletionQueue _mainDeletionQueue;
 
   // TODO: A good amount of these should not be exposed publicly based on the

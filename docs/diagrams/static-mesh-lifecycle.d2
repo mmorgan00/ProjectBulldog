@@ -10,7 +10,7 @@ grid-columns: 1
       - Renderer uploads data to GPU.
       - Renderer saves the address of the vertexes + the buffer of the indices into a `RenderObject`
       - Renderer returns an opaque handle to this MeshAsset
-    - Core then on each simulation loop, builds the `RenderObjects` (MeshAsset + Material) into a `DrawContext`, ideally made trimmed based on frustum culling
+    - Core
     - Renderer iterates through DrawContext (multiple RenderObjects), sorting by materials, and runs draw calls on each object
 
     Note: Material usage is not shown. RenderObjects without a material are acceptable, and will use the default material instead.
