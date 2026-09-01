@@ -132,7 +132,7 @@ void VulkanEngine::draw_background(VkCommandBuffer cmd) {
                 std::ceil(_drawImage.imageExtent.height / 16.0), 1);
 }
 
-void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
+void VulkanEngine::draw_geometry(VkCommandBuffer cmd, engine::DrawContext ctx) {
   VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(
       _drawImage.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
   VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(
@@ -210,12 +210,12 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
 
   // TODO: Hardcoded to one opaque pass and one transparent pass. Should at some
   // point support multiple materials
-  for (auto& r : mainDrawContext.OpaqueSurfaces) {
-    draw(r);
+  for (auto& r : ctx.OpaqueSurfaces) {
+    draw(*r);
   }
 
-  for (auto& r : mainDrawContext.TransparentSurfaces) {
-    draw(r);
+  for (auto& r : ctx.TransparentSurfaces) {
+    draw(*r);
   }
   // end TODO
 
@@ -225,7 +225,7 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
   mainDrawContext.TransparentSurfaces.clear();
 }
 
-void VulkanEngine::draw() {
+void VulkanEngine::draw(engine::DrawContext ctx) {
   update_scene();
   //> draw_1
   // wait until the gpu has finished rendering the last frame. Timeout of 1
@@ -288,7 +288,7 @@ void VulkanEngine::draw() {
 
   vkutil::transition_image(cmd, _depthImage.image, VK_IMAGE_LAYOUT_UNDEFINED,
                            VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-  draw_geometry(cmd);
+  draw_geometry(cmd, ctx);
 
   // transition the draw image and the swapchain image into their correct
   // transfer layouts
@@ -1008,7 +1008,7 @@ void VulkanEngine::init_default_data() {
       globalDescriptorAllocator);
 }
 
-void LoadedGLTF::Draw(const glm::mat4& topMatrix, DrawContext& ctx) {
+void LoadedGLTF::Draw(const glm::mat4& topMatrix, engine::DrawContext& ctx) {
   // create renderables from the scenenodes
   for (auto& n : topNodes) {
     n->Draw(topMatrix, ctx);
@@ -1039,7 +1039,7 @@ void LoadedGLTF::clearAll() {
   }
 }
 
-void MeshNode::Draw(const glm::mat4& topMatrix, DrawContext& ctx) {
+void MeshNode::Draw(const glm::mat4& topMatrix, engine::DrawContext& ctx) {
   glm::mat4 nodeMatrix = topMatrix * worldTransform;
 
   for (auto& s : mesh->surfaces) {
@@ -1052,7 +1052,7 @@ void MeshNode::Draw(const glm::mat4& topMatrix, DrawContext& ctx) {
     def.transform = nodeMatrix;
     def.vertexBufferAddress = mesh->meshBuffers.vertexBufferAddress;
 
-    ctx.OpaqueSurfaces.push_back(def);
+    ctx.OpaqueSurfaces.push_back(&def);
   }
 
   // recurse down

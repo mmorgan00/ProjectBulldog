@@ -8,13 +8,14 @@
 #include "orion/asset/primitives.h"
 #include "orion/core/asset_registry.h"
 #include "orion/core/engine_types.h"
+#include "orion/core/render_engines/vulkan/vulkan_engine.h"
 #include "orion/core/renderer.h"
 #include "orion/core/resource_types/static_mesh.h"
 #include "orion/entity/camera.h"
 #include "orion/entry.h"
 #include "orion/util/logger.h"
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   DECLARE_LOG_CATEGORY(ORION);
   AppState state;
   // Load config
@@ -32,8 +33,8 @@ int main(int argc, char *argv[]) {
 
   Camera mainCamera;
 
-  mainCamera.velocity = glm::vec3(0.f);
-  mainCamera.position = glm::vec3(30.f, -00.f, -085.f);
+  mainCamera.velocity = glm::vec3(0.F);
+  mainCamera.position = glm::vec3(00.F, -00.F, -05.F);
 
   mainCamera.pitch = 0;
   mainCamera.yaw = 0;
@@ -61,7 +62,10 @@ int main(int argc, char *argv[]) {
          handle.generation);
   OE_LOG(ORION, DEBUG, "Static Mesh registry entry retrieval name {}",
          staticMeshRegistry.get(handle)->name);
-  renderer.loadStaticMesh(staticMeshRegistry.get(handle));
+  RenderObject* test_mesh =
+      renderer.loadStaticMesh(staticMeshRegistry.get(handle));
+  engine::DrawContext dctx{.OpaqueSurfaces = {test_mesh},
+                           .TransparentSurfaces = {}};
 
   // Main loop
   bool bQuit = false;
@@ -94,6 +98,8 @@ int main(int argc, char *argv[]) {
           resize_requested = true;
         }
       }
+      // DRAW LOOP
+      renderer.draw(dctx);
 
       if (bStopRunning) {
         // throttle the speed to avoid the endless spinning
@@ -109,8 +115,6 @@ int main(int argc, char *argv[]) {
       resize_requested = false;
       continue;  // skip the draw call this frame
     }
-
-    renderer.draw();
   }
 
   // Cleanup process

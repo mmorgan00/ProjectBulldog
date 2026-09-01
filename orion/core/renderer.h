@@ -12,7 +12,6 @@
 #include "orion/entity/camera.h"
 // Forward declaring here, each RendererBackend will have it's own
 // implementation (GPU allocation types)
-class RenderObject;
 class RenderEngine;
 
 class Renderer {
@@ -28,7 +27,7 @@ class Renderer {
   /**
    * @brief Draws the next frame
    */
-  void draw();
+  void draw(engine::DrawContext);
 
   /**
    * @brief Load a single static mesh
@@ -61,7 +60,7 @@ class RenderEngine {
   virtual void loadScene(std::string_view fileName) = 0;
   // virtual std::shared_ptr<RenderComponent> loadObject() = 0;
   virtual void set_camera(Camera* camera) = 0;
-  virtual void draw() = 0;
+  virtual void draw(engine::DrawContext) = 0;
   virtual void cleanup() = 0;
   virtual void resize_window() = 0;
   bool resize_requested{false};

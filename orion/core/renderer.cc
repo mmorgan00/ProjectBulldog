@@ -31,7 +31,7 @@ void Renderer::resize_window() { engine->resize_window(); }
 /**
  * @brief Driver function to render each frame
  */
-void Renderer::draw() { engine->draw(); }
+void Renderer::draw(engine::DrawContext ctx) { engine->draw(ctx); }
 
 /**
  * brief Sets a designated camera to be used as the Renderer view matrix

@@ -10,10 +10,16 @@
 // Materials are meaningless for now and just a placeholder type. Everything
 // will be default material
 
+class RenderObject;
 namespace engine {
 struct MeshBuffers {
   std::vector<uint32_t> indexBuffer;
   std::vector<Vertex> vertexBuffer;
+};
+
+struct DrawContext {
+  std::vector<RenderObject*> OpaqueSurfaces;
+  std::vector<RenderObject*> TransparentSurfaces;
 };
 
 struct Material {

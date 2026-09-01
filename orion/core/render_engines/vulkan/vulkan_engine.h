@@ -32,7 +32,7 @@ struct GPUSceneData {
 struct MeshNode : public Node {
   std::shared_ptr<MeshAsset> mesh;
 
-  void Draw(const glm::mat4& topMatrix, DrawContext& ctx) override;
+  void Draw(const glm::mat4& topMatrix, engine::DrawContext& ctx) override;
 };
 
 struct RenderObject {
@@ -44,11 +44,6 @@ struct RenderObject {
 
   glm::mat4 transform;
   VkDeviceAddress vertexBufferAddress;
-};
-
-struct DrawContext {
-  std::vector<RenderObject> OpaqueSurfaces;
-  std::vector<RenderObject> TransparentSurfaces;
 };
 
 class VulkanEngine;
@@ -163,7 +158,7 @@ class VulkanEngine : public RenderEngine {
   std::vector<VkImageView> _swapchainImageViews;
   VkExtent2D _swapchainExtent;
 
-  DrawContext mainDrawContext;
+  engine::DrawContext mainDrawContext;
   std::unordered_map<std::string, std::shared_ptr<Node>> loadedNodes;
 
   void update_scene();
@@ -237,9 +232,9 @@ class VulkanEngine : public RenderEngine {
 
   void resize_window() override;
   // draw loop
-  void draw() override;
+  void draw(engine::DrawContext) override;
   void draw_background(VkCommandBuffer cmd);
-  void draw_geometry(VkCommandBuffer cmd);
+  void draw_geometry(VkCommandBuffer cmd, engine::DrawContext ctx);
   // shuts down the engine
   void cleanup() override;
 
@@ -267,7 +262,7 @@ struct LoadedGLTF : IRenderable {
 
   ~LoadedGLTF() { clearAll(); }
 
-  virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx);
+  virtual void Draw(const glm::mat4& topMatrix, engine::DrawContext& ctx);
 
  private:
   void clearAll();
