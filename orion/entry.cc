@@ -13,6 +13,7 @@
 #include "orion/entity/components/render.h"
 #include "orion/entity/components/transform.h"
 #include "orion/util/logger.h"
+#include "orion/util/scenes.h"
 
 void init_test_cube(AssetRegistry<StaticMesh>* assreg, Renderer* renderer,
                     entt::registry* entreg) {
@@ -43,113 +44,120 @@ void init_test_cube(AssetRegistry<StaticMesh>* assreg, Renderer* renderer,
 
 int main(void) {
   DECLARE_LOG_CATEGORY(ENGINE);
+  try {
+    OE_LOG(ENGINE, INFO, "ORION STARTING");
 
-  OE_LOG(ENGINE, INFO, "ORION STARTING");
+    AppState state;
 
-  AppState state;
+    // Load config
 
-  // Load config
+    simdjson::ondemand::parser parser;
+    auto json = simdjson::padded_string::load(ENGINE_CONFIG_PATH);
+    if (json.error()) {
+      OE_LOG(ENGINE, ERROR, "Could not load config: {}", ENGINE_CONFIG_PATH);
+      return 1;
+    }
+    simdjson::ondemand::document config = parser.iterate(json);
+    std::string_view graphicsAPI_sv = config["graphicsAPI"].get_string();
+    std::string graphicsAPI = std::string(graphicsAPI_sv);
 
-  simdjson::ondemand::parser parser;
-  auto json = simdjson::padded_string::load(ENGINE_CONFIG_PATH);
-  if (json.error()) {
-    OE_LOG(ENGINE, ERROR, "Could not load config: {}", ENGINE_CONFIG_PATH);
+    state.build(config, ENGINE_ASSETS_PATH);
+
+    entt::registry registry;
+    scripting::Runtime runtime;
+
+    runtime.initialize(&registry);
+    Camera mainCamera;
+    SceneLoader sceneLoader;
+    std::vector<SceneNode> nodes = sceneLoader.parse("..");
+
+    OE_LOG(ENGINE, DEBUG, "Found {} nodes", nodes.size());
+
+    mainCamera.velocity = glm::vec3(0.F);
+    const glm::vec3 cam_init_pos = glm::vec3({4.0F, 2.F, 5.F});
+    mainCamera.position = cam_init_pos;
+
+    const float starting_pitch = -0.5F;
+    mainCamera.pitch = starting_pitch;
+    mainCamera.yaw = -1.0F;
+
+    OE_LOG(ENGINE, INFO, "{}", state.appName);
+    OE_LOG(ENGINE, INFO, "Running using {}", graphicsAPI);
+    // Init modules
+    Renderer renderer;
+    renderer.init(state);
+    renderer.set_camera(&mainCamera);
+    // Call game initialization
+    OE_init();
+
+    AssetRegistry<StaticMesh> staticMeshRegistry;
+    init_test_cube(&staticMeshRegistry, &renderer, &registry);
+
+    // ------------- ECS VIEWS ----------------------
+    auto render_view = registry.view<RenderComponent>();
+    auto transform_view = registry.view<TransformComponent>();
+    // ---------------------------------------------
+    File script_test;
+    File::resource(state.assetsPath + "/scripts/demo.oscr", &script_test);
+    scripting::Script testingScript(script_test);
+    scripting::ScriptComponent test_scriptable;
+
+    bool bQuit = false;
+    // bool resize_requested = false;
+    auto last_frame_time = std::chrono::high_resolution_clock::now();
+    SDL_Event event;
+    float elapsed = 0.0F;
+    while (!bQuit) {
+      const auto current_time = std::chrono::high_resolution_clock::now();
+      const auto delta =
+          std::chrono::duration<float>(current_time - last_frame_time);
+      float delta_time = delta.count();  // seconds as a flot
+      last_frame_time = current_time;
+      elapsed += delta_time;
+      OE_update(delta_time);
+      // Handle events on queue
+      while (SDL_PollEvent(&event) != 0) {
+        // close the window when user alt-f4s or clicks the X button
+        if (event.type == SDL_QUIT) {
+          bQuit = true;
+        };
+        // mainCamera.handleInputEvent(event);
+
+        // Handle keypress
+        if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
+          OE_LOG(ENGINE, INFO, "Quitting...");
+          bQuit = true;
+        }
+      }
+      // TODO: Should be scriptable view, not transform. Placeholder
+      for (entt::entity entity : transform_view) {
+        for (int i = 0; i < testingScript.nodes.size(); i++) {
+          scripting::EvalContext eval_ctx{
+              .self = entity,
+              .delta_time = delta_time,
+              .elapsed_time = elapsed,
+          };
+
+          runtime.eval(testingScript.nodes[i], eval_ctx);
+        }
+      }
+      engine::DrawContext dctx{
+          .OpaqueSurfaces = {},
+          .TransparentSurfaces = {},
+      };
+
+      for (entt::entity entity : render_view) {
+        auto& render_cmp = render_view.get<RenderComponent>(entity);
+        dctx.OpaqueSurfaces.push_back(render_cmp.handle);
+      }
+      renderer.draw(dctx);
+    }
+    OE_shutdown();
+    return 0;
+  } catch (const char* message) {
+    OE_LOG(ENGINE, FATAL, "{}", message);
     return 1;
   }
-  simdjson::ondemand::document config = parser.iterate(json);
-  std::string_view graphicsAPI_sv = config["graphicsAPI"].get_string();
-  std::string graphicsAPI = std::string(graphicsAPI_sv);
-
-  state.build(config, ENGINE_ASSETS_PATH);
-
-  entt::registry registry;
-  scripting::Runtime runtime;
-
-  runtime.initialize(&registry);
-
-  Camera mainCamera;
-
-  mainCamera.velocity = glm::vec3(0.F);
-  const glm::vec3 cam_init_pos = glm::vec3({4.0F, 2.F, 5.F});
-  mainCamera.position = cam_init_pos;
-
-  const float starting_pitch = -0.5F;
-  mainCamera.pitch = starting_pitch;
-  mainCamera.yaw = -1.0F;
-
-  OE_LOG(ENGINE, INFO, "{}", state.appName);
-  OE_LOG(ENGINE, INFO, "Running using {}", graphicsAPI);
-  // Init modules
-  Renderer renderer;
-  renderer.init(state);
-  renderer.set_camera(&mainCamera);
-  // Call game initialization
-  OE_init();
-
-  AssetRegistry<StaticMesh> staticMeshRegistry;
-  init_test_cube(&staticMeshRegistry, &renderer, &registry);
-
-  // ------------- ECS VIEWS ----------------------
-  auto render_view = registry.view<RenderComponent>();
-  auto transform_view = registry.view<TransformComponent>();
-  // ---------------------------------------------
-  File script_test;
-  File::resource(state.assetsPath + "/scripts/demo.oscr", &script_test);
-  scripting::Script testingScript(script_test);
-  scripting::ScriptComponent test_scriptable;
-
-  bool bQuit = false;
-  // bool resize_requested = false;
-  auto last_frame_time = std::chrono::high_resolution_clock::now();
-  SDL_Event event;
-  float elapsed = 0.0F;
-  while (!bQuit) {
-    const auto current_time = std::chrono::high_resolution_clock::now();
-    const auto delta =
-        std::chrono::duration<float>(current_time - last_frame_time);
-    float delta_time = delta.count();  // seconds as a flot
-    last_frame_time = current_time;
-    elapsed += delta_time;
-    OE_update(delta_time);
-    // Handle events on queue
-    while (SDL_PollEvent(&event) != 0) {
-      // close the window when user alt-f4s or clicks the X button
-      if (event.type == SDL_QUIT) {
-        bQuit = true;
-      };
-      // mainCamera.handleInputEvent(event);
-
-      // Handle keypress
-      if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
-        OE_LOG(ENGINE, INFO, "Quitting...");
-        bQuit = true;
-      }
-    }
-    // TODO: Should be scriptable view, not transform. Placeholder
-    for (entt::entity entity : transform_view) {
-      for (int i = 0; i < testingScript.nodes.size(); i++) {
-        scripting::EvalContext eval_ctx{
-            .self = entity,
-            .delta_time = delta_time,
-            .elapsed_time = elapsed,
-        };
-
-        runtime.eval(testingScript.nodes[i], eval_ctx);
-      }
-    }
-    engine::DrawContext dctx{
-        .OpaqueSurfaces = {},
-        .TransparentSurfaces = {},
-    };
-
-    for (entt::entity entity : render_view) {
-      auto& render_cmp = render_view.get<RenderComponent>(entity);
-      dctx.OpaqueSurfaces.push_back(render_cmp.handle);
-    }
-    renderer.draw(dctx);
-  }
-  OE_shutdown();
-  return 0;
 }
 
 #endif  // ORION_ENTRY_CC_
