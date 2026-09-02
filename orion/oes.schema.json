@@ -1,0 +1,110 @@
+{
+  "title": "Orion Engine Scene Schema",
+  "description": "Schema for .oes (Orion Engine Scene) files",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version, e.g., \"1.0\"",
+      "examples": [
+        "1.0"
+      ],
+      "pattern": "^\d+\.\d+$"
+    },
+    "sceneName": {
+      "type": "string",
+      "description": "Human-readable name for the scene",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "camera": {
+      "type": "object",
+      "description": "Initial camera configuration",
+      "properties": {
+        "position": {
+          "type": "array",
+          "description": "Camera position as [x, y, z]",
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "yaw": {
+          "type": "number",
+          "description": "Horizontal rotation in degrees",
+          "default": 0
+        },
+        "pitch": {
+          "type": "number",
+          "description": "Vertical rotation in degrees",
+          "default": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "nodes": {
+      "type": "array",
+      "description": "Scene nodes",
+      "items": {
+        "type": "object",
+        "description": "Single node definition",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Unique identifier for this node",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "type": {
+            "type": "string",
+            "description": "node type",
+            "enum": [
+              "primitive"
+            ]
+          },
+          "primitive": {
+            "type": "string",
+            "description": "Primitive type (when type=\"primitive\")",
+            "pattern": "^(cube)$",
+            "enum": [
+              "cube"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ],
+        "additionalProperties": false,
+        "if": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "primitive"
+            }
+          }
+        },
+        "then": {
+          "type": "string"
+        },
+        "else": {
+          "type": "string"
+        }
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "version",
+    "sceneName",
+    "nodes"
+  ],
+  "additionalProperties": false
+}
