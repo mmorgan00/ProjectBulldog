@@ -49,10 +49,10 @@ int main(void) {
   Camera mainCamera;
 
   mainCamera.velocity = glm::vec3(0.F);
-  mainCamera.position = glm::vec3(00.F, 00.F, 05.F);
+  mainCamera.position = glm::vec3(4.0F, 02.F, 05.F);
 
-  mainCamera.pitch = 0;
-  mainCamera.yaw = 0;
+  mainCamera.pitch = -0.5F;
+  mainCamera.yaw = -1.0F;
 
   OE_LOG(ENGINE, INFO, "{}", state.appName);
   OE_LOG(ENGINE, INFO, "Running using {}", graphicsAPI);
@@ -80,6 +80,7 @@ int main(void) {
       if (event.type == SDL_QUIT) {
         bQuit = true;
       };
+      mainCamera.handleInputEvent(event);
 
       // Handle keypress
       if (event.type == SDL_KEYDOWN) {
