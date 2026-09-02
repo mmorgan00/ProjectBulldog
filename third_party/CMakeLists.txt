@@ -1,9 +1,19 @@
 find_package(Vulkan REQUIRED)
-find_package(simdjson REQUIRED)
 
 
 # For whatever reason this doesn't compile for me
-set(SDL_PIPEWIRE Off) 
+set(SDL_PIPEWIRE Off)
+
+include(FetchContent)
+FetchContent_Declare(
+  simdjson
+  GIT_REPOSITORY https://github.com/simdjson/simdjson.git
+  GIT_TAG v3.10.1
+)
+FetchContent_MakeAvailable(simdjson)
+
+
+
 
 add_library(vkbootstrap STATIC)
 add_library(nlohmann INTERFACE)

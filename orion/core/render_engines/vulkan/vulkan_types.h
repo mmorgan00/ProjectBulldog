@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "orion/core/render_engines/vulkan/vulkan_descriptors.h"
+#include "orion/core/renderer_types.h"
 #include "orion/util/containers.h"
 #include "orion/util/logger.h"
 
@@ -32,16 +33,16 @@ struct MaterialPipeline {
  * @param passType - used for draw ordering
  */
 struct MaterialInstance {
-  MaterialPipeline* pipeline;
+  MaterialPipeline* pipeline = nullptr;
   VkDescriptorSet materialSet;
-  MaterialPass passType;
+  MaterialPass passType = MaterialPass::MainColor;
 };
 
 struct DrawContext;
 
 // base class for a renderable dynamic object
 class IRenderable {
-  virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx) = 0;
+  virtual void Draw(const glm::mat4& topMatrix, engine::DrawContext& ctx) = 0;
 };
 
 // implementation of a drawable scene node.
@@ -62,7 +63,8 @@ struct Node : public IRenderable {
     }
   }
 
-  virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx) override {
+  virtual void Draw(const glm::mat4& topMatrix,
+                    engine::DrawContext& ctx) override {
     // draw children
     for (auto& c : children) {
       c->Draw(topMatrix, ctx);
@@ -108,14 +110,6 @@ struct AllocatedBuffer {
   VmaAllocationInfo info;    // Allocation metadata, needed for cleanup
 };
 
-struct Vertex {
-  glm::vec3 position;
-  float uv_x;
-  glm::vec3 normal;
-  float uv_y;
-  glm::vec4 color;
-};
-
 // holds the resources needed for a mesh
 
 struct GPUMeshBuffers {
@@ -129,8 +123,8 @@ struct GLTFMaterial {
 };
 
 struct GeoSurface {
-  uint32_t startIndex;
-  uint32_t count;
+  uint32_t startIndex = 0;
+  uint32_t count = 0;
   std::shared_ptr<GLTFMaterial> material;
 };
 

@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <glm/gtx/transform.hpp>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
@@ -32,7 +33,18 @@
 
 VulkanEngine* loadedEngine = nullptr;
 
-bool VulkanEngine::init(app_state& state) {
+// TODO: Implement
+void VulkanEngine::loadObject(engine::MeshAsset mesh) {
+  std::shared_ptr<MeshAsset> newmesh = std::make_shared<MeshAsset>();
+  for (auto s : mesh.surfaces) {
+    newmesh->meshBuffers = this->uploadMesh(mesh.meshBuffers.indexBuffer,
+                                            mesh.meshBuffers.vertexBuffer);
+  }
+
+  // mainDrawContext.OpaqueSurfaces.push_back(newmesh);
+};
+
+bool VulkanEngine::init(AppState& state) {
   // We initialize SDL and create a window with it.
   SDL_Init(SDL_INIT_VIDEO);
 
@@ -76,12 +88,19 @@ void VulkanEngine::cleanup() {
     for (size_t i = 0; i < renderCompleteSemaphores.size(); i++) {
       vkDestroySemaphore(_device, renderCompleteSemaphores[i], nullptr);
     }
+    // TODO: Seems like a duplicate now
     for (auto& mesh : meshes) {
       destroy_buffer(mesh->meshBuffers.indexBuffer);
       destroy_buffer(mesh->meshBuffers.vertexBuffer);
     }
+    for (auto& buffers : uploadedMeshBuffers) {
+      destroy_buffer(buffers.vertexBuffer);
+      destroy_buffer(buffers.indexBuffer);
+    }
+    uploadedMeshBuffers.clear();
 
     _mainDeletionQueue.flush();
+
     destroy_swapchain();
     vkDestroySurfaceKHR(_instance, _surface, nullptr);
     vkDestroyDevice(_device, nullptr);
@@ -121,7 +140,7 @@ void VulkanEngine::draw_background(VkCommandBuffer cmd) {
                 std::ceil(_drawImage.imageExtent.height / 16.0), 1);
 }
 
-void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
+void VulkanEngine::draw_geometry(VkCommandBuffer cmd, engine::DrawContext ctx) {
   VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(
       _drawImage.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
   VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(
@@ -197,13 +216,16 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
     vkCmdDrawIndexed(cmd, draw.indexCount, 1, draw.firstIndex, 0, 0);
   };
 
-  for (auto& r : mainDrawContext.OpaqueSurfaces) {
-    draw(r);
+  // TODO: Hardcoded to one opaque pass and one transparent pass. Should at some
+  // point support multiple materials
+  for (auto& r : ctx.OpaqueSurfaces) {
+    draw(*r);
   }
 
-  for (auto& r : mainDrawContext.TransparentSurfaces) {
-    draw(r);
+  for (auto& r : ctx.TransparentSurfaces) {
+    draw(*r);
   }
+  // end TODO
 
   vkCmdEndRendering(cmd);
   // we delete the draw commands now that we processed them
@@ -211,7 +233,7 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
   mainDrawContext.TransparentSurfaces.clear();
 }
 
-void VulkanEngine::draw() {
+void VulkanEngine::draw(engine::DrawContext ctx) {
   update_scene();
   //> draw_1
   // wait until the gpu has finished rendering the last frame. Timeout of 1
@@ -274,7 +296,7 @@ void VulkanEngine::draw() {
 
   vkutil::transition_image(cmd, _depthImage.image, VK_IMAGE_LAYOUT_UNDEFINED,
                            VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-  draw_geometry(cmd);
+  draw_geometry(cmd, ctx);
 
   // transition the draw image and the swapchain image into their correct
   // transfer layouts
@@ -369,7 +391,10 @@ AllocatedBuffer VulkanEngine::create_buffer(size_t allocSize,
 
   VmaAllocationCreateInfo vmaallocInfo = {};
   vmaallocInfo.usage = memoryUsage;
-  vmaallocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+  if (memoryUsage == VMA_MEMORY_USAGE_CPU_ONLY ||
+      memoryUsage == VMA_MEMORY_USAGE_CPU_TO_GPU) {
+    vmaallocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+  }
   AllocatedBuffer newBuffer;
 
   // allocate the buffer
@@ -481,6 +506,7 @@ void VulkanEngine::destroy_image(const AllocatedImage& img) {
 
 GPUMeshBuffers VulkanEngine::uploadMesh(std::span<uint32_t> indices,
                                         std::span<Vertex> vertices) {
+  OE_LOG(VULKAN_ENGINE, INFO, "Calling upload mesh!");
   const size_t vertexBufferSize = vertices.size() * sizeof(Vertex);
   const size_t indexBufferSize = indices.size() * sizeof(uint32_t);
 
@@ -542,9 +568,10 @@ GPUMeshBuffers VulkanEngine::uploadMesh(std::span<uint32_t> indices,
 //> Buffer management
 
 //< Initializations
-void VulkanEngine::init_vulkan(app_state& state) {
+void VulkanEngine::init_vulkan(AppState& state) {
   vkb::InstanceBuilder builder;
-
+  DECLARE_LOG_CATEGORY(VULKAN_INIT);
+  OE_LOG(VULKAN_INIT, INFO, "Initializing vulkan....");
   // make the vulkan instance, with basic debug features
   auto inst_ret = builder
                       .set_app_name(state.appName.c_str())
@@ -560,11 +587,14 @@ void VulkanEngine::init_vulkan(app_state& state) {
 
   vkb::Instance vkb_inst = inst_ret.value();
 
+  OE_LOG(VULKAN_INIT, INFO, "Instance created");
+
   // grab the instance
   _instance = vkb_inst.instance;
   _debug_messenger = vkb_inst.debug_messenger;
 
   SDL_Vulkan_CreateSurface(_window, _instance, &_surface);
+  OE_LOG(VULKAN_INIT, INFO, "Surface created");
 
   // vulkan 1.3 features
   VkPhysicalDeviceVulkan13Features features{
@@ -594,6 +624,9 @@ void VulkanEngine::init_vulkan(app_state& state) {
 
   vkb::Device vkbDevice = deviceBuilder.build().value();
 
+  OE_LOG(VULKAN_INIT, INFO, "Device selected for 1.3 support {}",
+         vkbDevice.physical_device.name);
+
   // Get the VkDevice handle used in the rest of a vulkan application
   _device = vkbDevice.device;
   _chosenGPU = physicalDevice.physical_device;
@@ -606,8 +639,12 @@ void VulkanEngine::init_vulkan(app_state& state) {
   allocatorInfo.physicalDevice = _chosenGPU;
   allocatorInfo.device = _device;
   allocatorInfo.instance = _instance;
+  allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
   allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
-  vmaCreateAllocator(&allocatorInfo, &_allocator);
+
+  VK_CHECK(vmaCreateAllocator(&allocatorInfo, &_allocator));
+
+  OE_LOG(VULKAN_INIT, INFO, "VMA Allocator created");
 
   _mainDeletionQueue.push_function([&]() { vmaDestroyAllocator(_allocator); });
 
@@ -868,20 +905,59 @@ void VulkanEngine::init_background_pipeline() {
   });
 }
 
-/**
- * @detail Creates a new object and registers it as a top level node in the
- * current scene graph.
- */
-std::shared_ptr<RenderComponent> VulkanEngine::loadObject() {
-  // Load from file
-  OE_LOG(VULKAN_ENGINE, INFO, "Loading object");
-  // TODO: Needs to not be just an equals, but building nodes into a graph
-  meshes =
-      vkutil::loadMeshGLB(loadedEngine, "../../assets/basicmesh.glb").value();
+RenderObject* VulkanEngine::uploadMesh(engine::MeshAsset mesh) {
+  OE_LOG(VULKAN_ENGINE, DEBUG, "Uploading static mesh: {}", mesh.name);
 
-  auto rc = std::make_shared<RenderComponent>(this);
-  return rc;
+  if (mesh.meshBuffers.vertexBuffer.empty() ||
+      mesh.meshBuffers.indexBuffer.empty()) {
+    OE_LOG(VULKAN_ENGINE, ERROR, "Attempted to upload mesh with no data!");
+    return nullptr;
+  }
+
+  std::span<Vertex> vertices = mesh.meshBuffers.vertexBuffer;
+  std::span<uint32_t> indices = mesh.meshBuffers.indexBuffer;
+  // Actually upload the VBOs to GPU
+  GPUMeshBuffers gpuBuffers = uploadMesh(indices, vertices);
+
+  // Validate GPU upload succeeded
+  if (gpuBuffers.indexBuffer.buffer == VK_NULL_HANDLE) {
+    OE_LOG(VULKAN_ENGINE, ERROR, "GPU upload returned null index buffer!");
+    return nullptr;
+  }
+
+  uploadedMeshBuffers.push_back(gpuBuffers);
+
+  // Calculate total index count
+  uint32_t totalIndexCount = std::accumulate(
+      mesh.surfaces.begin(), mesh.surfaces.end(), 0u,
+      [](uint32_t sum, const auto& s) { return sum + s.count; });
+  // Create RenderObject with valid GPU resources
+  RenderObject* robj = new RenderObject{
+      .indexCount = totalIndexCount,
+      .firstIndex = 0,  // TODO: Fine for now, but probably will break later if
+                        // 'packing' occurs
+      .indexBuffer = gpuBuffers.indexBuffer.buffer,  // VkBuffer handle
+      .material = &defaultData,                      // Fallback material
+      .transform = glm::mat4{1.0F},
+      .vertexBufferAddress = gpuBuffers.vertexBufferAddress};
+
+  return robj;
 }
+// /**
+//  * @detail Creates a new object and registers it as a top level node in the
+//  * current scene graph.
+//  */
+// std::shared_ptr<RenderCompINFOonent> VulkanEngine::loadObject() {
+//   // Load from file
+//   OE_LOG(VULKAN_ENGINE, INFO, "Loading object");
+//   // TODO: Needs to not be just an equals, but building nodes into a graph
+//   meshes =
+//       vkutil::loadMeshGLB(loadedEngine,
+//       "../../assets/basicmesh.glb").value();
+
+//   auto rc = std::make_shared<RenderComponent>(this);
+//   return rc;
+// }
 
 void VulkanEngine::init_default_data() {
   // 3 default textures, white, grey, black. 1 pixel each
@@ -963,7 +1039,7 @@ void VulkanEngine::init_default_data() {
       globalDescriptorAllocator);
 }
 
-void LoadedGLTF::Draw(const glm::mat4& topMatrix, DrawContext& ctx) {
+void LoadedGLTF::Draw(const glm::mat4& topMatrix, engine::DrawContext& ctx) {
   // create renderables from the scenenodes
   for (auto& n : topNodes) {
     n->Draw(topMatrix, ctx);
@@ -994,7 +1070,7 @@ void LoadedGLTF::clearAll() {
   }
 }
 
-void MeshNode::Draw(const glm::mat4& topMatrix, DrawContext& ctx) {
+void MeshNode::Draw(const glm::mat4& topMatrix, engine::DrawContext& ctx) {
   glm::mat4 nodeMatrix = topMatrix * worldTransform;
 
   for (auto& s : mesh->surfaces) {
@@ -1007,7 +1083,7 @@ void MeshNode::Draw(const glm::mat4& topMatrix, DrawContext& ctx) {
     def.transform = nodeMatrix;
     def.vertexBufferAddress = mesh->meshBuffers.vertexBufferAddress;
 
-    ctx.OpaqueSurfaces.push_back(def);
+    ctx.OpaqueSurfaces.push_back(&def);
   }
 
   // recurse down

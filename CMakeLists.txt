@@ -5,6 +5,7 @@ project(ProjectBulldog CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
 add_subdirectory(third_party)
 add_subdirectory(orion)
 add_subdirectory(sandbox)
@@ -28,10 +29,10 @@ endif()
 
 
 find_package(Vulkan REQUIRED)
-find_package(simdjson REQUIRED)
 
 
 find_program(SLANGC slangc HINTS /usr/bin /usr/local/bin $ENV{VULKAN_SDK}/Bin/ $ENV{VULKAN_SDK}/Bin32/)
+
 file(GLOB_RECURSE SLANG_SOURCE_FILES
     "${PROJECT_SOURCE_DIR}/assets/shaders/**/*.frag"
     "${PROJECT_SOURCE_DIR}/assets/shaders/**/*.vert"

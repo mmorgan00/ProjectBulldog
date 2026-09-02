@@ -1,0 +1,35 @@
+Overview: {
+grid-rows: 2
+grid-columns: 1
+
+  explanation: |md
+    # Upload Process
+    - Asset file is unpacked into vertices/indices
+    - Indices/vertices are packed into an `engine::MeshAsset`
+    - core hands this to the renderer backend
+      - Renderer uploads data to GPU.
+      - Renderer saves the address of the vertexes + the buffer of the indices into a `RenderObject`
+      - Renderer returns an opaque handle to this MeshAsset
+    - Core
+    - Renderer iterates through DrawContext (multiple RenderObjects), sorting by materials, and runs draw calls on each object
+
+    Note: Material usage is not shown. RenderObjects without a material are acceptable, and will use the default material instead.
+
+    This is intentional, as material uploading can happen in parallel to mesh uploading, especially in the future advent of asynchronous and parallelized loading.
+  |
+
+  diagram: {
+    label: From Disk To Display - Static Mesh
+    shape: sequence_diagram
+
+    assets
+    core
+    rb: Renderer Backend
+
+    assets -> core: 1. Load from disk (.obj, .gltf)
+    core -> rb: 2. Uploads vertex/index data (engine::MeshAsset)
+    rb -> core: 3. Returns MeshAsset handle
+    core -> rb: 4. Submits DrawContext (built from scene tree) for a frame
+    rb -> Display: 5. Draw calls with shaders turn into pixels on screen
+  }
+}

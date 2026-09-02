@@ -4,13 +4,14 @@
 #define ORION_CORE_RENDERER_H_
 
 #include <memory>
-#include <string>
 #include <string_view>
 
 #include "orion/core/engine_types.h"
+#include "orion/core/renderer_types.h"
+#include "orion/core/resource_types/static_mesh.h"
 #include "orion/entity/camera.h"
-
-class RenderComponent;
+// Forward declaring here, each RendererBackend will have it's own
+// implementation (GPU allocation types)
 class RenderEngine;
 
 class Renderer {
@@ -18,7 +19,7 @@ class Renderer {
   /**
    * @brief initializes any render specific resources
    */
-  void init(app_state& state);
+  void init(AppState& state);
   /**
    * @brief Cleans up any rendering specific resources
    */
@@ -26,12 +27,12 @@ class Renderer {
   /**
    * @brief Draws the next frame
    */
-  void draw();
+  void draw(engine::DrawContext);
 
   /**
-   * @brief load a single Scene to be rendered
-   */
-  std::shared_ptr<RenderComponent> loadScene(std::string_view fileName);
+   * @brief Load a single static mesh
+   **/
+  RenderObject* loadStaticMesh(StaticMesh* mesh);
 
   /**
    * @brief resize the window
@@ -52,23 +53,25 @@ class RenderEngine {
   /**
    * @brief Initialize rendering resources, including render pipelines
    */
-  virtual bool init(app_state& state) = 0;
+  virtual bool init(AppState& state) = 0;
   virtual ~RenderEngine() = default;
+  virtual void loadObject(engine::MeshAsset object) = 0;
+  virtual RenderObject* uploadMesh(engine::MeshAsset mesh) = 0;
   virtual void loadScene(std::string_view fileName) = 0;
-  virtual std::shared_ptr<RenderComponent> loadObject() = 0;
+  // virtual std::shared_ptr<RenderComponent> loadObject() = 0;
   virtual void set_camera(Camera* camera) = 0;
-  virtual void draw() = 0;
+  virtual void draw(engine::DrawContext) = 0;
   virtual void cleanup() = 0;
   virtual void resize_window() = 0;
   bool resize_requested{false};
 };
 
-class RenderComponent {
- public:
-  explicit RenderComponent(RenderEngine* renderEngine);
+// class RenderComponent {
+//  public:
+//   explicit RenderComponent(RenderEngine* renderEngine);
 
- private:
-  RenderEngine* engine;
-};
+//  private:
+//   RenderEngine* engine;
+// };
 
 #endif  // ORION_CORE_RENDERER_H_

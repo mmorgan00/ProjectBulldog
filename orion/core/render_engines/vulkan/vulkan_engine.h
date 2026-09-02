@@ -14,6 +14,7 @@
 #include "orion/core/render_engines/vulkan/vulkan_descriptors.h"
 #include "orion/core/render_engines/vulkan/vulkan_types.h"
 #include "orion/core/renderer.h"
+#include "orion/core/renderer_types.h"
 #include "orion/entity/camera.h"
 #include "orion/util/logger.h"
 
@@ -31,23 +32,18 @@ struct GPUSceneData {
 struct MeshNode : public Node {
   std::shared_ptr<MeshAsset> mesh;
 
-  void Draw(const glm::mat4& topMatrix, DrawContext& ctx) override;
+  void Draw(const glm::mat4& topMatrix, engine::DrawContext& ctx) override;
 };
 
 struct RenderObject {
-  uint32_t indexCount;
-  uint32_t firstIndex;
+  uint32_t indexCount = 0;
+  uint32_t firstIndex = 0;
   VkBuffer indexBuffer;
 
-  MaterialInstance* material;
+  MaterialInstance* material = nullptr;
 
   glm::mat4 transform;
   VkDeviceAddress vertexBufferAddress;
-};
-
-struct DrawContext {
-  std::vector<RenderObject> OpaqueSurfaces;
-  std::vector<RenderObject> TransparentSurfaces;
 };
 
 class VulkanEngine;
@@ -71,7 +67,7 @@ struct GLTFMetallic_Roughness {
     AllocatedImage metalRoughImage;
     VkSampler metalRoughSampler;
     VkBuffer dataBuffer;
-    uint32_t dataBufferOffset;
+    uint32_t dataBufferOffset = 0;
   };
 
   DescriptorWriter writer;
@@ -87,6 +83,7 @@ struct GLTFMetallic_Roughness {
 class LoadedGLTF;  // Engine needs to know about it for storing. Declared later
 
 class VulkanEngine : public RenderEngine {
+  std::vector<GPUMeshBuffers> uploadedMeshBuffers;
   bool _isInitialized{false};
   int _frameNumber{0};
   bool stop_rendering{false};
@@ -123,7 +120,7 @@ class VulkanEngine : public RenderEngine {
   VkQueue _graphicsQueue;
   uint32_t _graphicsQueueFamily = 0;
 
-  void init_vulkan(app_state& state);
+  void init_vulkan(AppState& state);
   void init_swapchain();
   void resize_swapchain();
   void init_commands();
@@ -137,6 +134,7 @@ class VulkanEngine : public RenderEngine {
   void set_camera(Camera* camera) override;
 
   // Default data
+  // TODO: Seems like a duplicate now
   std::vector<std::shared_ptr<MeshAsset>> meshes;
 
   GPUSceneData sceneData;
@@ -162,7 +160,7 @@ class VulkanEngine : public RenderEngine {
   std::vector<VkImageView> _swapchainImageViews;
   VkExtent2D _swapchainExtent;
 
-  DrawContext mainDrawContext;
+  engine::DrawContext mainDrawContext;
   std::unordered_map<std::string, std::shared_ptr<Node>> loadedNodes;
 
   void update_scene();
@@ -182,10 +180,11 @@ class VulkanEngine : public RenderEngine {
   VkPipelineLayout _defaultPipelineLayout;
   VkPipeline _defaultPipeline;
 
-  bool init(app_state& state) override;
+  bool init(AppState& state) override;
   void loadScene(std::string_view fileName) override;
-  std::shared_ptr<RenderComponent> loadObject() override;
+  void loadObject(engine::MeshAsset mesh) override;
 
+  RenderObject* uploadMesh(engine::MeshAsset mesh) override;
   DeletionQueue _mainDeletionQueue;
 
   // TODO: A good amount of these should not be exposed publicly based on the
@@ -205,6 +204,7 @@ class VulkanEngine : public RenderEngine {
 
   // End TODO
 
+  std::unordered_map<std::string, std::shared_ptr<RenderObject>> renderObjects;
   std::unordered_map<std::string, std::shared_ptr<LoadedGLTF>> loadedScenes;
   VkSampler _defaultSamplerLinear;
   VkSampler _defaultSamplerNearest;
@@ -234,9 +234,9 @@ class VulkanEngine : public RenderEngine {
 
   void resize_window() override;
   // draw loop
-  void draw() override;
+  void draw(engine::DrawContext) override;
   void draw_background(VkCommandBuffer cmd);
-  void draw_geometry(VkCommandBuffer cmd);
+  void draw_geometry(VkCommandBuffer cmd, engine::DrawContext ctx);
   // shuts down the engine
   void cleanup() override;
 
@@ -260,11 +260,11 @@ struct LoadedGLTF : IRenderable {
 
   AllocatedBuffer materialDataBuffer;
 
-  VulkanEngine* creator;
+  VulkanEngine* creator = nullptr;
 
   ~LoadedGLTF() { clearAll(); }
 
-  virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx);
+  virtual void Draw(const glm::mat4& topMatrix, engine::DrawContext& ctx);
 
  private:
   void clearAll();

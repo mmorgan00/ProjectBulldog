@@ -5,32 +5,42 @@
 
 #include "SDL_events.h"
 #include "SDL_video.h"
+#include "orion/asset/primitives.h"
+#include "orion/core/asset_registry.h"
 #include "orion/core/engine_types.h"
+#include "orion/core/render_engines/vulkan/vulkan_engine.h"
 #include "orion/core/renderer.h"
+#include "orion/core/resource_types/static_mesh.h"
+#include "orion/entity/camera.h"
 #include "orion/entry.h"
 #include "orion/util/logger.h"
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   DECLARE_LOG_CATEGORY(ORION);
-  app_state state;
+  AppState state;
   // Load config
   simdjson::ondemand::parser parser;
   simdjson::padded_string json =
+
       simdjson::padded_string::load("../../config/engine.conf");
   simdjson::ondemand::document config = parser.iterate(json);
+  std::string_view graphicsAPI_sv = config["graphicsAPI"].get_string();
+  std::string_view entry_scene_sv = config["entryScene"].get_string();
+  std::string graphicsAPI = std::string(graphicsAPI_sv);
+  std::string entry_scene = std::string(entry_scene_sv);
 
   state.build(config);
 
   Camera mainCamera;
 
-  mainCamera.velocity = glm::vec3(0.f);
-  mainCamera.position = glm::vec3(30.f, -00.f, -085.f);
+  mainCamera.velocity = glm::vec3(0.F);
+  mainCamera.position = glm::vec3(00.F, -00.F, -05.F);
 
   mainCamera.pitch = 0;
   mainCamera.yaw = 0;
 
-  OE_LOG(ORION, INFO, "{}", std::string(state.appName));
-  OE_LOG(ORION, INFO, "Running using {}", std::string(config["graphicsAPI"]));
+  OE_LOG(ORION, INFO, "{}", state.appName);
+  OE_LOG(ORION, INFO, "Running using {}", graphicsAPI);
   // Init modules
   Renderer renderer;
   renderer.init(state);
@@ -38,9 +48,24 @@ int main(int argc, char *argv[]) {
   // Call game initialization
   init();
 
-  OE_LOG(ORION, INFO, "Loading initial scene {}",
-         std::string(config["entryScene"]));
-  renderer.loadScene(std::string(config["entryScene"]));
+  OE_LOG(ORION, INFO, "Loading initial scene {}", entry_scene);
+  // renderer.loadScene(entry_scene);
+  AssetRegistry<StaticMesh> staticMeshRegistry;
+  Primitive cube = primitives::cube();
+  StaticMesh cube_sm = StaticMesh{
+      .name = "Test", .vertices = cube.vertices, .indices = cube.indices};
+  Resource<StaticMesh> handle = staticMeshRegistry.insert(cube_sm);
+
+  OE_LOG(ORION, DEBUG, "Static Mesh registry size {}",
+         staticMeshRegistry.size());
+  OE_LOG(ORION, DEBUG, "Static Mesh registry entry generation {}",
+         handle.generation);
+  OE_LOG(ORION, DEBUG, "Static Mesh registry entry retrieval name {}",
+         staticMeshRegistry.get(handle)->name);
+  RenderObject* test_mesh =
+      renderer.loadStaticMesh(staticMeshRegistry.get(handle));
+  engine::DrawContext dctx{.OpaqueSurfaces = {test_mesh},
+                           .TransparentSurfaces = {}};
 
   // Main loop
   bool bQuit = false;
@@ -73,6 +98,8 @@ int main(int argc, char *argv[]) {
           resize_requested = true;
         }
       }
+      // DRAW LOOP
+      renderer.draw(dctx);
 
       if (bStopRunning) {
         // throttle the speed to avoid the endless spinning
@@ -88,8 +115,6 @@ int main(int argc, char *argv[]) {
       resize_requested = false;
       continue;  // skip the draw call this frame
     }
-
-    renderer.draw();
   }
 
   // Cleanup process
