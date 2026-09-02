@@ -4,9 +4,28 @@
 #include "orion/entry.h"
 
 #include "SDL_events.h"
+#include "orion/core/asset_registry.h"
 #include "orion/core/renderer.h"
+#include "orion/core/resource_types/static_mesh.h"
 #include "orion/entity/camera.h"
 #include "orion/util/logger.h"
+
+RenderObject* init_test_cube(AssetRegistry<StaticMesh>* assreg,
+                             Renderer* renderer) {
+  DECLARE_LOG_CATEGORY(ENGINE_TEST);
+  Primitive cube = primitives::cube();
+  StaticMesh cube_sm = StaticMesh{
+      .name = "Test", .vertices = cube.vertices, .indices = cube.indices};
+  Resource<StaticMesh> handle = assreg->insert(cube_sm);
+
+  OE_LOG(ENGINE_TEST, DEBUG, "Static Mesh registry size {}", assreg->size());
+  OE_LOG(ENGINE_TEST, DEBUG, "Static Mesh registry entry generation {}",
+         handle.generation);
+  OE_LOG(ENGINE_TEST, DEBUG, "Static Mesh registry entry retrieval name {}",
+         assreg->get(handle)->name);
+  RenderObject* test_mesh = renderer->loadStaticMesh(assreg->get(handle));
+  return test_mesh;
+}
 
 int main(void) {
   DECLARE_LOG_CATEGORY(ENGINE);
@@ -44,6 +63,12 @@ int main(void) {
   // Call game initialization
   OE_init();
 
+  AssetRegistry<StaticMesh> staticMeshRegistry;
+  RenderObject* default_cube = init_test_cube(&staticMeshRegistry, &renderer);
+
+  engine::DrawContext dctx{.OpaqueSurfaces = {default_cube},
+                           .TransparentSurfaces = {}};
+
   bool bQuit = false;
   // bool resize_requested = false;
   SDL_Event event;
@@ -65,6 +90,7 @@ int main(void) {
         }
       }
     }
+    renderer.draw(dctx);
   }
   OE_shutdown();
   return 0;
