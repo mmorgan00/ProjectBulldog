@@ -3,12 +3,11 @@
 #define ORION_ENTRY_H_
 #pragma once
 
-class IGameState {
-  virtual void init() = 0;
-  virtual void handleEvents() = 0;
-  virtual void exit() = 0;
-};
-
-extern void init();
+// The stubs a new game must implement
+extern "C" {
+void OE_init();
+void OE_update(float delta_time);
+void OE_shutdown();
+}
 
 #endif  // ORION_ENTRY_H_
