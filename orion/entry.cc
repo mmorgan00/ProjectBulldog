@@ -71,9 +71,15 @@ int main(void) {
 
   bool bQuit = false;
   // bool resize_requested = false;
+  auto last_frame_time = std::chrono::high_resolution_clock::now();
   SDL_Event event;
   while (!bQuit) {
-    OE_update();
+    const auto current_time = std::chrono::high_resolution_clock::now();
+    const auto delta =
+        std::chrono::duration<float>(current_time - last_frame_time);
+    float delta_time = delta.count();  // seconds as a flot
+    last_frame_time = current_time;
+    OE_update(delta_time);
     // Handle events on queue
     while (SDL_PollEvent(&event) != 0) {
       // close the window when user alt-f4s or clicks the X button

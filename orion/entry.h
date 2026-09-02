@@ -6,7 +6,7 @@
 // The stubs a new game must implement
 extern "C" {
 void OE_init();
-void OE_update();
+void OE_update(float delta_time);
 void OE_shutdown();
 }
 
