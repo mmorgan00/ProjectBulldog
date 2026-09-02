@@ -9,7 +9,7 @@ void OE_init() {
 }
 
 void OE_update(float delta_time) {
-  OE_LOG(SANDBOX, INFO, "Sandbox ticking with {} delta time", delta_time);
+  // OE_LOG(SANDBOX, INFO, "Sandbox ticking with {} delta time", delta_time);
 }
 
 void OE_shutdown() { OE_LOG(SANDBOX, INFO, "Shutting down sandbox..."); }

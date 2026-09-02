@@ -5,6 +5,7 @@ add_library(orion STATIC
   entry.h
   util/containers.h
   util/logger.h
+  util/scenes.h
   core/renderer.cc
   core/renderer.h
   core/render_engines/vulkan/vulkan_engine.cc
