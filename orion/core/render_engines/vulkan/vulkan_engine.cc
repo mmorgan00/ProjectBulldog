@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <glm/gtx/transform.hpp>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
@@ -87,12 +88,19 @@ void VulkanEngine::cleanup() {
     for (size_t i = 0; i < renderCompleteSemaphores.size(); i++) {
       vkDestroySemaphore(_device, renderCompleteSemaphores[i], nullptr);
     }
+    // TODO: Seems like a duplicate now
     for (auto& mesh : meshes) {
       destroy_buffer(mesh->meshBuffers.indexBuffer);
       destroy_buffer(mesh->meshBuffers.vertexBuffer);
     }
+    for (auto& buffers : uploadedMeshBuffers) {
+      destroy_buffer(buffers.vertexBuffer);
+      destroy_buffer(buffers.indexBuffer);
+    }
+    uploadedMeshBuffers.clear();
 
     _mainDeletionQueue.flush();
+
     destroy_swapchain();
     vkDestroySurfaceKHR(_instance, _surface, nullptr);
     vkDestroyDevice(_device, nullptr);
@@ -898,25 +906,48 @@ void VulkanEngine::init_background_pipeline() {
 }
 
 RenderObject* VulkanEngine::uploadMesh(engine::MeshAsset mesh) {
-  OE_LOG(VULKAN_ENGINE, INFO,
-         "TODO: Implement GPU upload mesh in vulkan render engine");
-  std::shared_ptr<MeshAsset> newmesh = std::make_shared<MeshAsset>();
-  for (auto surf : mesh.surfaces) {
-    newmesh->meshBuffers = this->uploadMesh(mesh.meshBuffers.indexBuffer,
-                                            mesh.meshBuffers.vertexBuffer);
+  OE_LOG(VULKAN_ENGINE, DEBUG, "Uploading static mesh: {}", mesh.name);
+
+  if (mesh.meshBuffers.vertexBuffer.empty() ||
+      mesh.meshBuffers.indexBuffer.empty()) {
+    OE_LOG(VULKAN_ENGINE, ERROR, "Attempted to upload mesh with no data!");
+    return nullptr;
   }
-  return new RenderObject{.indexCount = 0,
-                          .firstIndex = 0,
-                          .indexBuffer = nullptr,
-                          .material = nullptr,
-                          .transform = glm::mat4{1.0F},
-                          .vertexBufferAddress = 0};
+
+  std::span<Vertex> vertices = mesh.meshBuffers.vertexBuffer;
+  std::span<uint32_t> indices = mesh.meshBuffers.indexBuffer;
+  // Actually upload the VBOs to GPU
+  GPUMeshBuffers gpuBuffers = uploadMesh(indices, vertices);
+
+  // Validate GPU upload succeeded
+  if (gpuBuffers.indexBuffer.buffer == VK_NULL_HANDLE) {
+    OE_LOG(VULKAN_ENGINE, ERROR, "GPU upload returned null index buffer!");
+    return nullptr;
+  }
+
+  uploadedMeshBuffers.push_back(gpuBuffers);
+
+  // Calculate total index count
+  uint32_t totalIndexCount = std::accumulate(
+      mesh.surfaces.begin(), mesh.surfaces.end(), 0u,
+      [](uint32_t sum, const auto& s) { return sum + s.count; });
+  // Create RenderObject with valid GPU resources
+  RenderObject* robj = new RenderObject{
+      .indexCount = totalIndexCount,
+      .firstIndex = 0,  // TODO: Fine for now, but probably will break later if
+                        // 'packing' occurs
+      .indexBuffer = gpuBuffers.indexBuffer.buffer,  // VkBuffer handle
+      .material = &defaultData,                      // Fallback material
+      .transform = glm::mat4{1.0F},
+      .vertexBufferAddress = gpuBuffers.vertexBufferAddress};
+
+  return robj;
 }
 // /**
 //  * @detail Creates a new object and registers it as a top level node in the
 //  * current scene graph.
 //  */
-// std::shared_ptr<RenderComponent> VulkanEngine::loadObject() {
+// std::shared_ptr<RenderCompINFOonent> VulkanEngine::loadObject() {
 //   // Load from file
 //   OE_LOG(VULKAN_ENGINE, INFO, "Loading object");
 //   // TODO: Needs to not be just an equals, but building nodes into a graph

@@ -83,6 +83,7 @@ struct GLTFMetallic_Roughness {
 class LoadedGLTF;  // Engine needs to know about it for storing. Declared later
 
 class VulkanEngine : public RenderEngine {
+  std::vector<GPUMeshBuffers> uploadedMeshBuffers;
   bool _isInitialized{false};
   int _frameNumber{0};
   bool stop_rendering{false};
@@ -133,6 +134,7 @@ class VulkanEngine : public RenderEngine {
   void set_camera(Camera* camera) override;
 
   // Default data
+  // TODO: Seems like a duplicate now
   std::vector<std::shared_ptr<MeshAsset>> meshes;
 
   GPUSceneData sceneData;
@@ -180,7 +182,7 @@ class VulkanEngine : public RenderEngine {
 
   bool init(AppState& state) override;
   void loadScene(std::string_view fileName) override;
-  void loadObject(engine::MeshAsset asset) override;
+  void loadObject(engine::MeshAsset mesh) override;
 
   RenderObject* uploadMesh(engine::MeshAsset mesh) override;
   DeletionQueue _mainDeletionQueue;
