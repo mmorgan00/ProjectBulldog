@@ -60,6 +60,9 @@ int main(void) {
     simdjson::ondemand::document config = parser.iterate(json);
     std::string_view graphicsAPI_sv = config["graphicsAPI"].get_string();
     std::string graphicsAPI = std::string(graphicsAPI_sv);
+    // std::string entry_scene = std::string(entry_scene_sv);
+    std::string demoScene = "../../scenes/demo.oes";
+    SceneLoader::parseFromFilePath(demoScene);
 
     state.build(config, ENGINE_ASSETS_PATH);
 
@@ -68,8 +71,7 @@ int main(void) {
 
     runtime.initialize(&registry);
     Camera mainCamera;
-    SceneLoader sceneLoader;
-    std::vector<SceneNode> nodes = sceneLoader.parse("..");
+    std::vector<SceneNode> nodes = SceneLoader::parse("..");
 
     OE_LOG(ENGINE, DEBUG, "Found {} nodes", nodes.size());
 

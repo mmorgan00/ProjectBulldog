@@ -2,10 +2,12 @@
 #define ORION_UTIL_SCENES_H_
 
 #include <filesystem>
+#include <fstream>
+#include <iostream>
 
 #include "orion/util/logger.h"
 #include "simdjson.h"
-struct SceneNode {};
+class SceneNode {};
 
 DECLARE_LOG_CATEGORY(SCENE_LOADER);
 class SceneLoader {
@@ -41,8 +43,24 @@ class SceneLoader {
   static bool validateFromFilePath(const std::filesystem::path& path) {
     return true;
   };
-  std::vector<SceneNode> parse(std::string_view data) {
-    // TODO: Load from file to content
+  static std::vector<SceneNode> parseFromFilePath(
+      const std::filesystem::path& path) {
+    // TODO: Open file
+    std::ifstream myfile(path);
+    if (myfile.is_open()) {
+      std::string line;
+      while (getline(myfile, line)) {
+        std::cout << line << '\n';
+      }
+      myfile.close();
+    }
+
+    else {
+      std::cout << "Unable to open file";
+    }
+    return parse("{}");
+  }
+  static std::vector<SceneNode> parse(std::string_view data) {
     std::string_view demo_scene = R"(
     {
         "version": "1.0",
