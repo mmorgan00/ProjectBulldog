@@ -44,12 +44,13 @@ int main(void) {
     // std::string_view entry_scene_sv = config["entryScene"].get_string();
     std::string graphicsAPI = std::string(graphicsAPI_sv);
     // std::string entry_scene = std::string(entry_scene_sv);
+    std::string demoScene = "../../scenes/demo.oes";
+    SceneLoader::parseFromFilePath(demoScene);
 
     state.build(config);
 
     Camera mainCamera;
-    SceneLoader sceneLoader;
-    std::vector<SceneNode> nodes = sceneLoader.parse("..");
+    std::vector<SceneNode> nodes = SceneLoader::parse("..");
 
     OE_LOG(ENGINE, DEBUG, "Found {} nodes", nodes.size());
 
