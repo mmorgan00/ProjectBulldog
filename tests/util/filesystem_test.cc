@@ -5,8 +5,10 @@
 
 #include <gtest/gtest.h>
 
+// test.oes is a reliably available demo scene file populated by the build
+// system
 TEST(Filesystem, ConfigFilesCanBeFound) {
-  File test_file = File::resource("test.oes");
-  EXPECT_EQ(1, 1);
+  File test_file;
+  EXPECT_EQ(File::resource("test.oes", &test_file), true);
 }
 #endif  // TESTS_UTIL_FILESYSTEM_TEST_CC_

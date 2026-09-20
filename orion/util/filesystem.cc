@@ -3,22 +3,18 @@
 
 #include "orion/util/filesystem.h"
 
-#include <fstream>
+#include <ios>
 #include <iostream>
 
-File File::resource(const std::string& filename) {
-  std::cout << "Opening resource file res://" << filename << "\n";
-  File file;
-  std::ofstream ofile;
-  ofile.open(filename);
-  if (ofile.is_open()) {
-    std::cout << "Found file " << "res://" << filename << " successfully"
-              << "\n";
-  } else {
-    std::cout << "File did not open" << "\n";
+bool File::resource(const std::string& filename, File* out_file) {
+  OE_LOG(FILESYSTEM, INFO, "Creating resource file handle res://{}", filename);
+  out_file->handle.open(filename, std::ios::in | std::ios::out);
+  if (out_file->handle.is_open()) {
+    OE_LOG(FILESYSTEM, INFO, "Opened file res://{} ", filename);
+    return true;
   }
-
-  return file;
+  OE_LOG(FILESYSTEM, INFO, "Failed to open file res://{} ", filename);
+  return false;
 };
 
 #endif  // ORION_UTIL_FILESYSTEM_CC_

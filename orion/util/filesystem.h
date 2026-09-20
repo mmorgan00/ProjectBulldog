@@ -3,11 +3,18 @@
 
 #include <vector>
 
+#include "orion/util/logger.h"
+
 enum class PathType : std::uint8_t { RESOURCE, USER, ABSOLUTE };
+#include <fstream>
+
+DECLARE_LOG_CATEGORY(FILESYSTEM);
 
 class File {
+  std::fstream handle;
+
  public:
-  static File resource(const std::string& filename);
+  static bool resource(const std::string& filename, File* out_file);
   static File user(std::string filename);
   /**
    * Returns true if file exists, false if not. Does not check if program is
