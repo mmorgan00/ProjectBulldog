@@ -17,10 +17,15 @@
 #include <fstream>
 
 enum class PathType : std::uint8_t { RESOURCE, USER, ABSOLUTE };
+#include <fstream>
+
+DECLARE_LOG_CATEGORY(FILESYSTEM);
 
 DECLARE_LOG_CATEGORY(FILESYSTEM);
 
 class File {
+  std::fstream handle;
+
  public:
   // Fallback case
   File() : resource_type(PathType::ABSOLUTE) {}
