@@ -63,4 +63,11 @@ class Filesystem {
   static std::string get_exec_path();
 };
 
+class Filesystem {
+ public:
+  static bool rename(std::string filename_from, std::string filename_to);
+  static bool remove(std::string to_remove);
+  static bool mkdir(std::string path);
+};
+
 #endif  // ORION_UTIL_FILESYSTEM_H_

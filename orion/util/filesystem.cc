@@ -1,3 +1,6 @@
+#ifndef ORION_UTIL_FILESYSTEM_CC_
+#define ORION_UTIL_FILESYSTEM_CC_
+
 #include "orion/util/filesystem.h"
 #ifdef PLATFORM_WINDOWS
 #include <windows.h>
