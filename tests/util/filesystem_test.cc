@@ -6,7 +6,7 @@
 #include <gtest/gtest.h>
 
 TEST(Filesystem, ConfigFilesCanBeFound) {
-  File test_file = File::resource("config/engine.conf");
+  File test_file = File::resource("test.oes");
   EXPECT_EQ(1, 1);
 }
 #endif  // TESTS_UTIL_FILESYSTEM_TEST_CC_
