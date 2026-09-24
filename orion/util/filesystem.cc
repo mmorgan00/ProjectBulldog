@@ -17,4 +17,14 @@ bool File::resource(const std::string& filename, File* out_file) {
   return false;
 };
 
+// TODO: Text vs binary. Now you've done it. Guess we're just supporting text
+// files until you remember you need to open that GLB file
+bool File::read(std::vector<uint8_t>& out_data) {
+  if (this->handle.is_open()) {
+    return true;
+  }
+
+  return false;
+}
+
 #endif  // ORION_UTIL_FILESYSTEM_CC_

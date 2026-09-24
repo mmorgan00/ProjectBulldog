@@ -14,13 +14,12 @@ class File {
   std::fstream handle;
 
  public:
+  /**
+   * Opens an existing resource file. If the requested file does not exist,
+   * returns false
+   **/
   static bool resource(const std::string& filename, File* out_file);
   static File user(std::string filename);
-  /**
-   * Returns true if file exists, false if not. Does not check if program is
-   * able (permissions) to open file
-   **/
-  static bool exists(std::string filename);
   /**
    * Returns true if able to read, false if not. Contents are returned in out
    * parameter
