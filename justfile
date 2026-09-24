@@ -29,8 +29,9 @@ build-tests:
     cmake --build ./build
 
 
-clean-build: clean-only
-    build-debug
+clean-build:
+    just clean-only
+    just build-debug
 
 clean-only:
     rm -rf build
