@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.12)
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 
 add_library(orion STATIC
-  entry.h
   util/containers.h
   util/logger.h
   util/filesystem.h
@@ -27,13 +26,21 @@ add_library(orion STATIC
   core/asset_registry.h
   asset/primitives.h
   asset/primitives.cc
+  core/renderer_types.h
+  core/resource_types/static_mesh.h
+  core/engine_types.h
+  asset/primitives.h
+  entity/camera.h
 )
+
+
 find_package(Vulkan REQUIRED)
 
 target_include_directories(orion PUBLIC ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/third_party)
 
 target_compile_features(orion PUBLIC cxx_std_20)
 
+target_compile_definitions(orion PUBLIC SDL_MAIN_HANDLED)
 target_compile_definitions(orion PUBLIC GLM_FORCE_DEPTH_ZERO_TO_ONE)
 
 target_link_libraries(orion PUBLIC vma glm vkbootstrap stb_image Vulkan::Vulkan SDL2::SDL2 fmt::fmt

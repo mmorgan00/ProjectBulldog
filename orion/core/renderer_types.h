@@ -10,7 +10,7 @@
 // Materials are meaningless for now and just a placeholder type. Everything
 // will be default material
 
-class RenderObject;
+struct RenderObject;
 namespace engine {
 struct MeshBuffers {
   std::vector<uint32_t> indexBuffer;

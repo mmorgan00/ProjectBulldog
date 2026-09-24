@@ -2,7 +2,6 @@
 #define ORION_ENTRY_CC_
 
 #include "orion/entry.h"
-
 #include "SDL_events.h"
 #include "orion/core/asset_registry.h"
 #include "orion/core/renderer.h"

@@ -9,10 +9,9 @@ alias tv := test-verbose
 alias rc := resource-copy
 
 build-debug:
-    cmake -S . -B ./build -DCMAKE_BUILD_TYPE=Debug
+    cmake -S . -B ./build -G "MinGW Makefiles" -DCMAKE_EXE_LINKER_FLAGS="-mconsole" -DCMAKE_BUILD_TYPE=Debug
     cmake --build ./build
-    cp ./config ./build/sandbox/config
-    cp ./scenes ./build/sandbox/scenes
+    just resource-copy
 
 resource-copy:
     cp ./config -r ./build/sandbox/config
@@ -25,7 +24,7 @@ test-verbose: build-tests
     ctest --test-dir ./build/tests -V
 
 build-tests:
-    cmake -S . -B ./build -DCMAKE_BUILD_TYPE=Debug
+    cmake -S . -B ./build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug
     cmake --build ./build
 
 
