@@ -792,15 +792,15 @@ void VulkanEngine::init_pipelines() {
 void VulkanEngine::init_default_pipeline() {
   //> mesh_shader
   VkShaderModule triangleFragShader;
-  if (!vkutil::load_shader_module("../../assets/shaders/default.frag.spv",
-                                  _device, &triangleFragShader)) {
+  if (!vkutil::load_shader_module("assets/shaders/default.frag.spv", _device,
+                                  &triangleFragShader)) {
     fmt::print("Error when building the fragment shader \n");
   } else {
     fmt::print("Triangle fragment shader succesfully loaded \n");
   }
 
   VkShaderModule triangleVertexShader;
-  if (!vkutil::load_shader_module("../../assets/shaders/default_mesh.vert.spv",
+  if (!vkutil::load_shader_module("assets/shaders/default_mesh.vert.spv",
                                   _device, &triangleVertexShader)) {
     fmt::print("Error when building the vertex shader \n");
   } else {
@@ -874,8 +874,8 @@ void VulkanEngine::init_background_pipeline() {
 
   VkShaderModule computeDrawShader;
   // TODO: Load this properly?
-  if (!vkutil::load_shader_module("../../assets/shaders/gradient.comp.spv",
-                                  _device, &computeDrawShader)) {
+  if (!vkutil::load_shader_module("assets/shaders/gradient.comp.spv", _device,
+                                  &computeDrawShader)) {
     fmt::print("Error when building the compute shader \n");
   }
 
@@ -1265,13 +1265,13 @@ void VulkanEngine::immediate_submit(
 //< GLTFMetallic_Roughness
 void GLTFMetallic_Roughness::build_pipelines(VulkanEngine* engine) {
   VkShaderModule meshFragShader;
-  if (!vkutil::load_shader_module("../../assets/shaders/mesh.frag.spv",
+  if (!vkutil::load_shader_module("assets/shaders/mesh.frag.spv",
                                   engine->_device, &meshFragShader)) {
     fmt::println("Error when building the mesh fragment shader module");
   }
 
   VkShaderModule meshVertexShader;
-  if (!vkutil::load_shader_module("../../assets/shaders/mesh.vert.spv",
+  if (!vkutil::load_shader_module("assets/shaders/mesh.vert.spv",
                                   engine->_device, &meshVertexShader)) {
     fmt::println("Error when building the mesh vertex shader module");
   }

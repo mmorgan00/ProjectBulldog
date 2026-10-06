@@ -24,6 +24,7 @@ build-debug:
 resource-copy:
     cp ./config -r ./build/sandbox/config
     cp ./scenes -r ./build/sandbox/scenes
+    cp ./assets -r ./build/assets
 
 test: build-tests
     ctest --test-dir ./build/tests --output-on-failure
