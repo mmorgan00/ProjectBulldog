@@ -23,6 +23,7 @@ add_library(orion STATIC
   entity/oentity.h
   entity/camera.h
   entity/camera.cc
+  entity/components/transform.h
   core/asset_registry.h
   asset/primitives.h
   asset/primitives.cc

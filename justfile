@@ -31,7 +31,14 @@ test-verbose: build-tests
     ctest --test-dir ./build/tests -V
 
 build-tests:
-    cmake -S . -B ./build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug
+    @if [ "$(OS)" = "Windows_NT" ]; then \
+        GEN="MinGW Makefiles"; \
+        EXTRA_FLAGS="-DCMAKE_EXE_LINKER_FLAGS=-mconsole"; \
+    else \
+        GEN="Unix Makefiles"; \
+        EXTRA_FLAGS=""; \
+    fi && \
+    cmake -S . -B ./build -G "$GEN" $$EXTRA_FLAGS -DCMAKE_BUILD_TYPE=Debug && \
     cmake --build ./build
 
 
