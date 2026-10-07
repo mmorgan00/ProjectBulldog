@@ -1,0 +1,11 @@
+{
+        "version": "1.0",
+        "sceneName": "DemoLevel",
+        "entities": [
+            {
+                "name": "TestCube",
+                "type": "primitive",
+                "primitive": "cube"
+            }
+        ]
+}

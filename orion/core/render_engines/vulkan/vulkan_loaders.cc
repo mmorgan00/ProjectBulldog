@@ -502,7 +502,7 @@ std::optional<std::vector<std::shared_ptr<MeshAsset>>> vkutil::loadMeshGLB(
       parser.loadGltfBinary(data.get(), filePath.parent_path(), gltfOptions);
   if (load) {
     gltf = std::move(load.get());
-    OE_LOG(RENDERER, INFO, "Opened {} successfully", filePath.c_str());
+    OE_LOG(RENDERER, INFO, "Opened {} successfully", filePath.string());
   } else {
     fmt::print("Failed to load GLB: {}\n",
                fastgltf::to_underlying(load.error()));

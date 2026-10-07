@@ -8,6 +8,7 @@
 #include "orion/core/renderer.h"
 #include "orion/core/resource_types/static_mesh.h"
 #include "orion/entity/camera.h"
+#include "orion/util/filesystem.h"
 #include "orion/util/logger.h"
 
 RenderObject* init_test_cube(AssetRegistry<StaticMesh>* assreg,
@@ -33,12 +34,24 @@ int main(void) {
   OE_LOG(ENGINE, INFO, "ORION STARTING");
 
   AppState state;
-  // Load config
-  simdjson::ondemand::parser parser;
-  simdjson::padded_string json =
 
-      simdjson::padded_string::load("../../config/engine.conf");
-  simdjson::ondemand::document config = parser.iterate(json);
+  // Load config
+
+  File config_file;
+  if (!File::resource("config/engine.conf", &config_file)) {
+    OE_LOG(ENGINE, ERROR, "Config file not found. Put it back");
+    return 1;
+  }
+
+  std::vector<uint8_t> config_contents;
+  config_file.read(config_contents);
+
+  simdjson::ondemand::parser parser;
+  simdjson::padded_string padded(
+      reinterpret_cast<const char*>(config_contents.data()),
+      config_contents.size());
+
+  simdjson::ondemand::document config = parser.iterate(padded);
   std::string_view graphicsAPI_sv = config["graphicsAPI"].get_string();
   // std::string_view entry_scene_sv = config["entryScene"].get_string();
   std::string graphicsAPI = std::string(graphicsAPI_sv);
