@@ -34,9 +34,11 @@ int main(void) {
   AppState state;
   // Load config
   simdjson::ondemand::parser parser;
-  simdjson::padded_string json =
-
-      simdjson::padded_string::load("../../config/engine.conf");
+  auto json = simdjson::padded_string::load(ENGINE_CONFIG_PATH);
+  if (json.error()) {
+    OE_LOG(ENGINE, ERROR, "Could not load config: {}", ENGINE_CONFIG_PATH);
+    return 1;
+  }
   simdjson::ondemand::document config = parser.iterate(json);
   std::string_view graphicsAPI_sv = config["graphicsAPI"].get_string();
   // std::string_view entry_scene_sv = config["entryScene"].get_string();

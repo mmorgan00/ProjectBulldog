@@ -9,6 +9,8 @@ FetchContent_Declare(
   simdjson
   GIT_REPOSITORY https://github.com/simdjson/simdjson.git
   GIT_TAG v3.10.1
+  GIT_SHALLOW TRUE
+  GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(simdjson)
 
@@ -18,6 +20,8 @@ FetchContent_Declare(
     entt
     GIT_REPOSITORY https://github.com/skypjack/entt.git
     GIT_TAG v4.0.0
+    GIT_SHALLOW TRUE
+    GIT_PROGRESS TRUE
 )
 
 FetchContent_MakeAvailable(entt)
