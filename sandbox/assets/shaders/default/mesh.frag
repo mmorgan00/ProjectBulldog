@@ -1,21 +1,19 @@
 
-#version 450
+import input_structures;
 
-#extension GL_GOOGLE_include_directive : require
-#include "input_structures.glsl"
+struct FragmentInput {
+    float3 normal : NORMAL;
+    float3 color  : COLOR;
+    float2 uv     : TEXCOORD0;
+};
 
-layout (location = 0) in vec3 inNormal;
-layout (location = 1) in vec3 inColor;
-layout (location = 2) in vec2 inUV;
-
-layout (location = 0) out vec4 outFragColor;
-
-void main() 
+[shader("fragment")]
+float4 main(FragmentInput input) : SV_Target
 {
-	float lightValue = max(dot(inNormal, sceneData.sunlightDirection.xyz), 0.1f);
+    float lightValue = max(dot(input.normal, sceneData.sunlightDirection.xyz), 0.1f);
 
-	vec3 color = inColor * texture(colorTex,inUV).xyz;
-	vec3 ambient = color *  sceneData.ambientColor.xyz;
+    float3 color   = input.color * colorTex.Sample(input.uv).xyz;
+    float3 ambient = color * sceneData.ambientColor.xyz;
 
-	outFragColor = vec4(color * lightValue *  sceneData.sunlightColor.w + ambient ,1.0f);
+    return float4(color * lightValue * sceneData.sunlightColor.w + ambient, 1.0f);
 }

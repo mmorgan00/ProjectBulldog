@@ -23,8 +23,8 @@ public ConstantBuffer<SceneData> sceneData;
 public ConstantBuffer<GLTFMaterialData> materialData;
 
 [vk::binding(1, 1)]
-public Texture2D colorTex;
+public Sampler2D colorTex;
 
 [vk::binding(2, 1)]
-public Texture2D metalRoughTex;
+public Sampler2D metalRoughTex;
 
