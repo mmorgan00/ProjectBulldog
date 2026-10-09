@@ -21,8 +21,6 @@ enum class PathType : std::uint8_t { RESOURCE, USER, ABSOLUTE };
 
 DECLARE_LOG_CATEGORY(FILESYSTEM);
 
-DECLARE_LOG_CATEGORY(FILESYSTEM);
-
 class File {
   std::fstream handle;
 
@@ -55,7 +53,6 @@ class File {
   std::string get_path() const;
 
  private:
-  std::fstream handle;
   PathType resource_type{PathType::ABSOLUTE};
   std::string base_path;
 };
@@ -66,13 +63,6 @@ class Filesystem {
   static bool remove(std::string to_remove);
   static bool mkdir(std::string path);
   static std::string get_exec_path();
-};
-
-class Filesystem {
- public:
-  static bool rename(std::string filename_from, std::string filename_to);
-  static bool remove(std::string to_remove);
-  static bool mkdir(std::string path);
 };
 
 #endif  // ORION_UTIL_FILESYSTEM_H_

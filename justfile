@@ -17,9 +17,7 @@ build-debug:
         EXTRA_FLAGS=""; \
     fi && \
     cmake -S . -B ./build -G "$GEN" $$EXTRA_FLAGS -DCMAKE_BUILD_TYPE=Debug && \
-    cmake --build ./build && \
-    just resource-copy
-
+    cmake --build ./build
 
 resource-copy:
     cp ./config -r ./build/sandbox/config

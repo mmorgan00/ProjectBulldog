@@ -15,6 +15,7 @@ target_link_options(sandbox PRIVATE
   -static-libstdc++
   -static -lwinpthread
 )
+ENDIF()
 
 target_compile_definitions(sandbox PRIVATE
   ENGINE_CONFIG_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config/engine.conf")

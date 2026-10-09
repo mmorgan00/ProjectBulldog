@@ -2,6 +2,7 @@
 #define ORION_ENTRY_CC_
 
 #include "orion/entry.h"
+
 #include "SDL_events.h"
 #include "orion/core/asset_registry.h"
 #include "orion/core/renderer.h"
@@ -35,15 +36,6 @@ int main(void) {
   AppState state;
 
   // Load config
-
-  File config_file;
-  if (!File::resource("config/engine.conf", &config_file)) {
-    OE_LOG(ENGINE, ERROR, "Config file not found. Put it back");
-    return 1;
-  }
-
-  std::vector<uint8_t> config_contents;
-  config_file.read(config_contents);
 
   simdjson::ondemand::parser parser;
   auto json = simdjson::padded_string::load(ENGINE_CONFIG_PATH);
