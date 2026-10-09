@@ -1,6 +1,3 @@
-#ifndef ORION_UTIL_FILESYSTEM_CC_
-#define ORION_UTIL_FILESYSTEM_CC_
-
 #include "orion/util/filesystem.h"
 #ifdef PLATFORM_WINDOWS
 #include <windows.h>
@@ -66,8 +63,8 @@ bool File::read(std::vector<uint8_t>& out_data) {
   while (handle.get(cursor)) {
     out_data.push_back(cursor);
   }
-  return true;
-}
+    return true;
+  }
 
 std::string File::get_path() const {
   std::string path;
@@ -83,3 +80,4 @@ std::string File::get_path() const {
   }
   return path;
 }
+
