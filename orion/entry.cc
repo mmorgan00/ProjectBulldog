@@ -45,7 +45,7 @@ int main(void) {
   std::string graphicsAPI = std::string(graphicsAPI_sv);
   // std::string entry_scene = std::string(entry_scene_sv);
 
-  state.build(config);
+  state.build(config, ENGINE_ASSETS_PATH);
 
   Camera mainCamera;
 

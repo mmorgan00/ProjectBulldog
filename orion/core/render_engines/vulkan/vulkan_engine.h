@@ -80,9 +80,14 @@ struct GLTFMetallic_Roughness {
       DynamicDescriptorAllocator& descriptorAllocator);
 };
 
+struct EngineState {
+  std::string shadersPath;
+};
+
 class LoadedGLTF;  // Engine needs to know about it for storing. Declared later
 
 class VulkanEngine : public RenderEngine {
+
   std::vector<GPUMeshBuffers> uploadedMeshBuffers;
   bool _isInitialized{false};
   int _frameNumber{0};
@@ -166,6 +171,7 @@ class VulkanEngine : public RenderEngine {
   void update_scene();
 
  public:
+  EngineState state;
   bool resize_requested{false};
   // Descriptor sets
   DynamicDescriptorAllocator globalDescriptorAllocator;

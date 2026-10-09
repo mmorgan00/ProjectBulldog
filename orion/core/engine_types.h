@@ -11,9 +11,11 @@ constexpr int MAX_CONCURRENT_FRAMES = 2;
 typedef struct AppState {
   std::string appName;
   std::string graphicsAPI;
+  std::string assetsPath;
 
-  void build(simdjson::ondemand::document &data) {
-    auto appNameValue = data["appName"].get_string();
+  void build(simdjson::ondemand::document &data, std::string assetsPath) {
+    this->assetsPath = assetsPath;
+      auto appNameValue = data["appName"].get_string();
     if (!appNameValue.error()) {
       this->appName = appNameValue.value();
     } else {
