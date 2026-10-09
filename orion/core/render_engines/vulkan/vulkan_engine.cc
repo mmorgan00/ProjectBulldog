@@ -45,6 +45,8 @@ void VulkanEngine::loadObject(engine::MeshAsset mesh) {
 };
 
 bool VulkanEngine::init(AppState& state) {
+  this->state.shadersPath = state.assetsPath + "/shaders/";
+
   // We initialize SDL and create a window with it.
   SDL_Init(SDL_INIT_VIDEO);
 
@@ -792,15 +794,17 @@ void VulkanEngine::init_pipelines() {
 void VulkanEngine::init_default_pipeline() {
   //> mesh_shader
   VkShaderModule triangleFragShader;
-  if (!vkutil::load_shader_module("assets/shaders/default.frag.spv", _device,
-                                  &triangleFragShader)) {
+  if (!vkutil::load_shader_module(
+          std::string(this->state.shadersPath + "/default.frag.spv").c_str(),
+                                  _device, &triangleFragShader)) {
     fmt::print("Error when building the fragment shader \n");
   } else {
     fmt::print("Triangle fragment shader succesfully loaded \n");
   }
 
   VkShaderModule triangleVertexShader;
-  if (!vkutil::load_shader_module("assets/shaders/default_mesh.vert.spv",
+  if (!vkutil::load_shader_module(std::string(this->state.shadersPath +
+                                  "/default_mesh.vert.spv").c_str(),
                                   _device, &triangleVertexShader)) {
     fmt::print("Error when building the vertex shader \n");
   } else {
@@ -874,8 +878,9 @@ void VulkanEngine::init_background_pipeline() {
 
   VkShaderModule computeDrawShader;
   // TODO: Load this properly?
-  if (!vkutil::load_shader_module("assets/shaders/gradient.comp.spv", _device,
-                                  &computeDrawShader)) {
+  if (!vkutil::load_shader_module(
+          std::string(this->state.shadersPath + "gradient.comp.spv").c_str(),
+                                  _device, &computeDrawShader)) {
     fmt::print("Error when building the compute shader \n");
   }
 
@@ -892,6 +897,7 @@ void VulkanEngine::init_background_pipeline() {
   computePipelineCreateInfo.pNext = nullptr;
   computePipelineCreateInfo.layout = _gradientPipelineLayout;
   computePipelineCreateInfo.stage = stageinfo;
+
 
   VK_CHECK(vkCreateComputePipelines(_device, VK_NULL_HANDLE, 1,
                                     &computePipelineCreateInfo, nullptr,
@@ -1265,13 +1271,14 @@ void VulkanEngine::immediate_submit(
 //< GLTFMetallic_Roughness
 void GLTFMetallic_Roughness::build_pipelines(VulkanEngine* engine) {
   VkShaderModule meshFragShader;
-  if (!vkutil::load_shader_module("assets/shaders/mesh.frag.spv",
+  if (!vkutil::load_shader_module(std::string(engine->state.shadersPath + "/mesh.frag.spv").c_str(),
                                   engine->_device, &meshFragShader)) {
     fmt::println("Error when building the mesh fragment shader module");
   }
 
   VkShaderModule meshVertexShader;
-  if (!vkutil::load_shader_module("assets/shaders/mesh.vert.spv",
+  if (!vkutil::load_shader_module(
+          std::string(engine->state.shadersPath + "/mesh.vert.spv").c_str(),
                                   engine->_device, &meshVertexShader)) {
     fmt::println("Error when building the mesh vertex shader module");
   }

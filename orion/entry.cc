@@ -2,7 +2,6 @@
 #define ORION_ENTRY_CC_
 
 #include "orion/entry.h"
-
 #include "SDL_events.h"
 #include "orion/core/asset_registry.h"
 #include "orion/core/renderer.h"
@@ -47,17 +46,18 @@ int main(void) {
   config_file.read(config_contents);
 
   simdjson::ondemand::parser parser;
-  simdjson::padded_string padded(
-      reinterpret_cast<const char*>(config_contents.data()),
-      config_contents.size());
-
-  simdjson::ondemand::document config = parser.iterate(padded);
+  auto json = simdjson::padded_string::load(ENGINE_CONFIG_PATH);
+  if (json.error()) {
+    OE_LOG(ENGINE, ERROR, "Could not load config: {}", ENGINE_CONFIG_PATH);
+    return 1;
+  }
+  simdjson::ondemand::document config = parser.iterate(json);
   std::string_view graphicsAPI_sv = config["graphicsAPI"].get_string();
   // std::string_view entry_scene_sv = config["entryScene"].get_string();
   std::string graphicsAPI = std::string(graphicsAPI_sv);
   // std::string entry_scene = std::string(entry_scene_sv);
 
-  state.build(config);
+  state.build(config, ENGINE_ASSETS_PATH);
 
   Camera mainCamera;
 
