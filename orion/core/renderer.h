@@ -10,6 +10,7 @@
 #include "orion/core/renderer_types.h"
 #include "orion/core/resource_types/static_mesh.h"
 #include "orion/entity/camera.h"
+#include "orion/entity/components/transform.h"
 // Forward declaring here, each RendererBackend will have it's own
 // implementation (GPU allocation types)
 class RenderEngine;
@@ -32,7 +33,7 @@ class Renderer {
   /**
    * @brief Load a single static mesh
    **/
-  RenderObject* loadStaticMesh(StaticMesh* mesh);
+  RenderObject* loadStaticMesh(StaticMesh* mesh, TransformComponent* transform);
 
   /**
    * @brief resize the window

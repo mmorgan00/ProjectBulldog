@@ -5,7 +5,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-struct TransformComponent {
+class TransformComponent {
+ public:
   glm::vec3 position{0.0F};
   glm::vec3 rotation{0.0F};
   glm::vec3 scale{1.0F};

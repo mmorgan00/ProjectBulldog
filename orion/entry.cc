@@ -3,16 +3,20 @@
 
 #include "orion/entry.h"
 
+#include <cmath>
+
 #include "SDL_events.h"
 #include "orion/core/asset_registry.h"
+#include "orion/core/render_engines/vulkan/vulkan_engine.h"
 #include "orion/core/renderer.h"
 #include "orion/core/resource_types/static_mesh.h"
 #include "orion/entity/camera.h"
+#include "orion/entity/components/transform.h"
 #include "orion/util/filesystem.h"
 #include "orion/util/logger.h"
 
-RenderObject* init_test_cube(AssetRegistry<StaticMesh>* assreg,
-                             Renderer* renderer) {
+std::tuple<RenderObject*, TransformComponent*> init_test_cube(
+    AssetRegistry<StaticMesh>* assreg, Renderer* renderer) {
   DECLARE_LOG_CATEGORY(ENGINE_TEST);
   Primitive cube = primitives::cube();
   StaticMesh cube_sm = StaticMesh{
@@ -24,8 +28,10 @@ RenderObject* init_test_cube(AssetRegistry<StaticMesh>* assreg,
          handle.generation);
   OE_LOG(ENGINE_TEST, DEBUG, "Static Mesh registry entry retrieval name {}",
          assreg->get(handle)->name);
-  RenderObject* test_mesh = renderer->loadStaticMesh(assreg->get(handle));
-  return test_mesh;
+  TransformComponent* transform = new TransformComponent();
+  RenderObject* test_mesh =
+      renderer->loadStaticMesh(assreg->get(handle), transform);
+  return {test_mesh, transform};
 }
 
 int main(void) {
@@ -45,9 +51,7 @@ int main(void) {
   }
   simdjson::ondemand::document config = parser.iterate(json);
   std::string_view graphicsAPI_sv = config["graphicsAPI"].get_string();
-  // std::string_view entry_scene_sv = config["entryScene"].get_string();
   std::string graphicsAPI = std::string(graphicsAPI_sv);
-  // std::string entry_scene = std::string(entry_scene_sv);
 
   state.build(config, ENGINE_ASSETS_PATH);
 
@@ -69,7 +73,8 @@ int main(void) {
   OE_init();
 
   AssetRegistry<StaticMesh> staticMeshRegistry;
-  RenderObject* default_cube = init_test_cube(&staticMeshRegistry, &renderer);
+  auto [default_cube, default_transform] =
+      init_test_cube(&staticMeshRegistry, &renderer);
 
   engine::DrawContext dctx{.OpaqueSurfaces = {default_cube},
                            .TransparentSurfaces = {}};
@@ -78,12 +83,14 @@ int main(void) {
   // bool resize_requested = false;
   auto last_frame_time = std::chrono::high_resolution_clock::now();
   SDL_Event event;
+  float elapsed = 0.0F;
   while (!bQuit) {
     const auto current_time = std::chrono::high_resolution_clock::now();
     const auto delta =
         std::chrono::duration<float>(current_time - last_frame_time);
     float delta_time = delta.count();  // seconds as a flot
     last_frame_time = current_time;
+    elapsed += delta_time;
     OE_update(delta_time);
     // Handle events on queue
     while (SDL_PollEvent(&event) != 0) {
@@ -102,6 +109,8 @@ int main(void) {
         }
       }
     }
+    default_transform->rotation = (default_transform->rotation + 0.5F / 360.0F);
+    default_transform->scale = glm::vec3{cos(elapsed)};
     renderer.draw(dctx);
   }
   OE_shutdown();

@@ -12,6 +12,7 @@
 #include "orion/core/renderer_types.h"
 #include "orion/core/resource_types/static_mesh.h"
 #include "orion/entity/camera.h"
+#include "orion/entity/components/transform.h"
 #include "orion/util/logger.h"
 
 void Renderer::init(AppState& state) {
@@ -52,7 +53,8 @@ void Renderer::cleanup() {
   engine = nullptr;
 }
 
-RenderObject* Renderer::loadStaticMesh(StaticMesh* mesh) {
+RenderObject* Renderer::loadStaticMesh(StaticMesh* mesh,
+                                       TransformComponent* transform) {
   // 1. Convert static mesh to opaque render object
   engine::MeshAsset new_asset;
   new_asset.name = mesh->name;
@@ -66,5 +68,6 @@ RenderObject* Renderer::loadStaticMesh(StaticMesh* mesh) {
                        .material = nullptr};
   new_asset.surfaces = std::vector<engine::Surface>{surf};
   RenderObject* robj = this->engine->uploadMesh(new_asset);
+  robj->transform = transform;
   return robj;
 }
