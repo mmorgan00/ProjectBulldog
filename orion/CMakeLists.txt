@@ -33,6 +33,7 @@ add_library(orion STATIC
   asset/primitives.h
   entity/camera.h
   entity/components/transform.h
+  core/scripting.h
 )
 
 

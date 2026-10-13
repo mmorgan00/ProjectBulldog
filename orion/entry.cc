@@ -10,9 +10,9 @@
 #include "orion/core/render_engines/vulkan/vulkan_engine.h"
 #include "orion/core/renderer.h"
 #include "orion/core/resource_types/static_mesh.h"
+#include "orion/core/scripting.h"
 #include "orion/entity/camera.h"
 #include "orion/entity/components/transform.h"
-#include "orion/util/filesystem.h"
 #include "orion/util/logger.h"
 
 std::tuple<RenderObject*, TransformComponent*> init_test_cube(
@@ -109,6 +109,10 @@ int main(void) {
         }
       }
     }
+    Value x{.type = Value::Type::Number, .number = 0.0F};
+    Value y{.type = Value::Type::Number, .number = 90.0F};
+    Value z{.type = Value::Type::Number, .number = 180.0F};
+    default_transform->set_rotation.call({x, y, z});
     default_transform->rotation = (default_transform->rotation + 0.5F / 360.0F);
     default_transform->scale = glm::vec3{cos(elapsed)};
     renderer.draw(dctx);
