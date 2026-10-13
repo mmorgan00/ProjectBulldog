@@ -22,13 +22,14 @@ target_compile_definitions(sandbox PRIVATE
   target_compile_definitions(sandbox PRIVATE
   ENGINE_ASSETS_PATH="${CMAKE_CURRENT_SOURCE_DIR}/assets")
   
-find_program(SLANGC slangc
+find_program(SLANGC
   NAMES slangc slang.exe
-  PATHS 
+  PATHS
     $ENV{VULKAN_SDK}/Bin
     $ENV{VULKAN_SDK}/Bin32
     $ENV{PROGRAMFILES}/Slang/bin
-  NO_DEFAULT_PATH
+    /usr/bin
+    /usr/local/bin
 )
 
 if(NOT SLANGC)
