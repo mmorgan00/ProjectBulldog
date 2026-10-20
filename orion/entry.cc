@@ -66,27 +66,6 @@ int main(void) {
 
   runtime.initialize(&registry);
 
-  // try {
-  //   runtime.call("set-rotation!", {
-  //                                     Value::ent(e),
-  //                                     Value::num(0.0),
-  //                                     Value::num(1.57),
-  //                                     Value::num(0.0),
-  //                                 });
-  //   auto& trans_cmp = registry.get<TransformComponent>(e);
-  //   OE_LOG(ENGINE, INFO, "rotation now: {} {} {}", t.rotation.x,
-  //   t.rotation.y,
-  //          t.rotation.z);  // expect 0 1.57 0
-
-  //   // bad call: wrong type, should be caught, not crash
-  //   runtime.call("set-rotation!",
-  //                {Value::ent(e), Value::null(), Value::num(0),
-  //                Value::num(0)});
-  // } catch (const ScriptError& err) {
-  //   OE_LOG(ENGINE, ERROR, "script error: {}",
-  //          err.what());  // expect "expected number"
-  // }
-
   Camera mainCamera;
 
   mainCamera.velocity = glm::vec3(0.F);
@@ -116,6 +95,11 @@ int main(void) {
       .OpaqueSurfaces = {default_cube},
       .TransparentSurfaces = {},
   };
+
+  File script_test;
+  File::resource(state.assetsPath + "/scripts/demo.oscr", &script_test);
+  OCScriptable test_scriptable;
+  test_scriptable.load(script_test, default_cube_ent);
 
   bool bQuit = false;
   // bool resize_requested = false;

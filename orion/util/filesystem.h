@@ -39,6 +39,10 @@ class File {
    * */
   bool read(std::vector<uint8_t>& out_data);
   /**
+   * Returns true if read. `out_string` is cleared each call, and only populated
+   * by succcessful read */
+  bool read_text(std::string& out_string);
+  /**
    * Writes contents to file. Replaces whatever content existed previously.
    **/
   bool write(std::vector<uint8_t>);

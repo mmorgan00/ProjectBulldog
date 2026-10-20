@@ -3,7 +3,10 @@
 
 #include <entt/entt.hpp>
 #include <functional>
+#include <stack>
 #include <vector>
+
+#include "orion/util/filesystem.h"
 
 struct ScriptError : std::runtime_error {
   using std::runtime_error::runtime_error;
@@ -76,6 +79,21 @@ class Runtime {
 
  private:
   std::unordered_map<std::string, Callable> natives_;
+};
+
+// TODO: Scriptable component, has a 'call stack' stack (literally) that gets
+// built at load time and then evaluated for each 'update' invocation
+
+// TODO: You should write some documentation
+class OCScriptable {
+  std::stack<Callable> call_stack;
+  std::unordered_map<std::string, Value> variables;
+  File source;
+
+ public:
+  static void load(File& filesource, entt::entity ent);
+  void reload();
+  void run();
 };
 
 #endif  // ORION_CORE_SCRIPTING_H_

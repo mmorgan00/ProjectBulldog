@@ -63,8 +63,25 @@ bool File::read(std::vector<uint8_t>& out_data) {
   while (handle.get(cursor)) {
     out_data.push_back(cursor);
   }
-    return true;
+  return true;
+}
+bool File::read_text(std::string& out_string) {
+  if (!handle.is_open()) {
+    out_string.clear();
+    return false;
   }
+
+  std::ostringstream sstr;
+  sstr << handle.rdbuf();
+
+  if (handle.bad()) {
+    out_string.clear();
+    return false;
+  }
+
+  out_string = std::move(sstr).str();
+  return true;
+}
 
 std::string File::get_path() const {
   std::string path;
@@ -80,4 +97,3 @@ std::string File::get_path() const {
   }
   return path;
 }
-
