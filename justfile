@@ -30,6 +30,9 @@ test: build-tests
 test-verbose: build-tests
     ctest --test-dir ./build/tests -V
 
+lint:
+    pre-commit run --all-files
+
 build-tests:
     @if [ "$(OS)" = "Windows_NT" ]; then \
         GEN="MinGW Makefiles"; \

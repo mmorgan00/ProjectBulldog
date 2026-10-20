@@ -13,9 +13,10 @@ typedef struct AppState {
   std::string graphicsAPI;
   std::string assetsPath;
 
-  void build(simdjson::ondemand::document &data, std::string assetsPath) {
-    this->assetsPath = assetsPath;
-      auto appNameValue = data["appName"].get_string();
+  void build(simdjson::ondemand::document& data,
+             const std::string& srcAssetsPath) {
+    this->assetsPath = srcAssetsPath;
+    auto appNameValue = data["appName"].get_string();
     if (!appNameValue.error()) {
       this->appName = appNameValue.value();
     } else {
