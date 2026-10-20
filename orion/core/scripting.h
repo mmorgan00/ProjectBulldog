@@ -2,12 +2,14 @@
 #define ORION_CORE_SCRIPTING_H_
 
 #include <entt/entt.hpp>
+#include <forward_list>
 #include <functional>
 #include <stack>
 #include <vector>
 
 #include "orion/util/filesystem.h"
 
+namespace scripting {
 struct ScriptError : std::runtime_error {
   using std::runtime_error::runtime_error;
 };
@@ -17,7 +19,6 @@ struct Value {
   union {
     double number;
     std::string* str;
-    void* func_ptr;  // opaque pointer to actual callable
     bool boolean;
     uint32_t entity;  // underlying pointer to an ECS entity
   };
@@ -28,6 +29,12 @@ struct Value {
     val.type = Type::Null;
     return val;
   };
+  static Value string(std::string* rawStr) {
+    Value val;
+    val.type = Type::String;
+    val.str = rawStr;
+    return val;
+  }
   static Value num(double dbl) {
     Value val;
     val.type = Type::Number;
@@ -53,6 +60,10 @@ struct Value {
     return static_cast<entt::entity>(entity);
   }
 };
+struct CallEntry {
+  std::string fnName;
+  std::forward_list<Value> params;
+};
 
 using Args = std::vector<Value>;
 
@@ -66,13 +77,19 @@ inline void require_args(const Args& args, size_t n, const char* fxn) {
 struct Callable {
   std::function<Value(const Args&)> invoke;
 };
-
+struct Node {
+  enum class Kind : uint8_t { Number, Symbol, List } kind = Kind::Symbol;
+  double number = 0.0;
+  std::string text;            // symbol name
+  std::vector<Node> children;  // only for List
+};
 class Runtime {
  public:
   void initialize(entt::registry* registry);
   void register_native(std::string name, Callable fxn) {
     natives_[std::move(name)] = std::move(fxn);
   };
+  Value eval(const Node& node);
   Value call(const std::string& name, const Args& args) {
     return natives_.at(name).invoke(args);
   }
@@ -81,19 +98,18 @@ class Runtime {
   std::unordered_map<std::string, Callable> natives_;
 };
 
-// TODO: Scriptable component, has a 'call stack' stack (literally) that gets
-// built at load time and then evaluated for each 'update' invocation
-
-// TODO: You should write some documentation
+// A parsed script
+struct Script {
+  std::vector<Node> nodes;
+  explicit Script(File& filesource);
+  Script() = default;
+};
 class OCScriptable {
-  std::stack<Callable> call_stack;
-  std::unordered_map<std::string, Value> variables;
-  File source;
+  Script script;
 
  public:
-  static void load(File& filesource, entt::entity ent);
   void reload();
   void run();
 };
-
+}  // namespace scripting
 #endif  // ORION_CORE_SCRIPTING_H_

@@ -62,7 +62,7 @@ int main(void) {
   state.build(config, ENGINE_ASSETS_PATH);
 
   entt::registry registry;
-  Runtime runtime;
+  scripting::Runtime runtime;
 
   runtime.initialize(&registry);
 
@@ -98,8 +98,9 @@ int main(void) {
 
   File script_test;
   File::resource(state.assetsPath + "/scripts/demo.oscr", &script_test);
-  OCScriptable test_scriptable;
-  test_scriptable.load(script_test, default_cube_ent);
+  scripting::Script testingScript(script_test);
+  scripting::OCScriptable test_scriptable;
+  // test_scriptable.load(script_test, default_cube_ent);
 
   bool bQuit = false;
   // bool resize_requested = false;
@@ -134,13 +135,17 @@ int main(void) {
     // Value x{.type = Value::Type::Number, .number = 0.0F};
     // Value y{.type = Value::Type::Number, .number = 90.0F};
     // Value z{.type = Value::Type::Number, .number = 180.0F};
-    runtime.call("update!", {Value::ent(default_cube_ent)});
-    runtime.call("set-rotation!", {
-                                      Value::ent(default_cube_ent),
-                                      Value::num(x_spin_speed * elapsed),
-                                      Value::num(y_spin_speed * elapsed),
-                                      Value::num(z_spin_speed * elapsed),
-                                  });
+    for (int i = 0; i < testingScript.nodes.size(); i++) {
+      runtime.eval(testingScript.nodes[i]);
+    }
+    runtime.call("update!", {scripting::Value::ent(default_cube_ent)});
+    runtime.call("set-rotation!",
+                 {
+                     scripting::Value::ent(default_cube_ent),
+                     scripting::Value::num(x_spin_speed * elapsed),
+                     scripting::Value::num(y_spin_speed * elapsed),
+                     scripting::Value::num(z_spin_speed * elapsed),
+                 });
 
     // default_cube_ent->set_rotation.invoke({x, y, z});
     // default_cube_ent->rotation = (default_cube_ent->rotation + 0.5F /
