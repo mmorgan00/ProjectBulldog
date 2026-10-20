@@ -15,12 +15,16 @@
 #include "orion/entity/components/transform.h"
 #include "orion/util/logger.h"
 
-std::tuple<RenderObject*, TransformComponent*> init_test_cube(
-    AssetRegistry<StaticMesh>* assreg, Renderer* renderer) {
+std::tuple<RenderObject*, entt::entity> init_test_cube(
+    AssetRegistry<StaticMesh>* assreg, Renderer* renderer,
+    entt::registry* entreg) {
   DECLARE_LOG_CATEGORY(ENGINE_TEST);
   Primitive cube = primitives::cube();
   StaticMesh cube_sm = StaticMesh{
-      .name = "Test", .vertices = cube.vertices, .indices = cube.indices};
+      .name = "Test",
+      .vertices = cube.vertices,
+      .indices = cube.indices,
+  };
   Resource<StaticMesh> handle = assreg->insert(cube_sm);
 
   OE_LOG(ENGINE_TEST, DEBUG, "Static Mesh registry size {}", assreg->size());
@@ -28,10 +32,12 @@ std::tuple<RenderObject*, TransformComponent*> init_test_cube(
          handle.generation);
   OE_LOG(ENGINE_TEST, DEBUG, "Static Mesh registry entry retrieval name {}",
          assreg->get(handle)->name);
-  TransformComponent* transform = new TransformComponent();
+
+  entt::entity entity = entreg->create();
+  auto& transform = entreg->emplace<TransformComponent>(entity);
   RenderObject* test_mesh =
-      renderer->loadStaticMesh(assreg->get(handle), transform);
-  return {test_mesh, transform};
+      renderer->loadStaticMesh(assreg->get(handle), &transform);
+  return {test_mesh, entity};
 }
 
 int main(void) {
@@ -55,12 +61,40 @@ int main(void) {
 
   state.build(config, ENGINE_ASSETS_PATH);
 
+  entt::registry registry;
+  Runtime runtime;
+
+  runtime.initialize(&registry);
+
+  // try {
+  //   runtime.call("set-rotation!", {
+  //                                     Value::ent(e),
+  //                                     Value::num(0.0),
+  //                                     Value::num(1.57),
+  //                                     Value::num(0.0),
+  //                                 });
+  //   auto& trans_cmp = registry.get<TransformComponent>(e);
+  //   OE_LOG(ENGINE, INFO, "rotation now: {} {} {}", t.rotation.x,
+  //   t.rotation.y,
+  //          t.rotation.z);  // expect 0 1.57 0
+
+  //   // bad call: wrong type, should be caught, not crash
+  //   runtime.call("set-rotation!",
+  //                {Value::ent(e), Value::null(), Value::num(0),
+  //                Value::num(0)});
+  // } catch (const ScriptError& err) {
+  //   OE_LOG(ENGINE, ERROR, "script error: {}",
+  //          err.what());  // expect "expected number"
+  // }
+
   Camera mainCamera;
 
   mainCamera.velocity = glm::vec3(0.F);
-  mainCamera.position = glm::vec3(4.0F, 02.F, 05.F);
+  const glm::vec3 cam_init_pos = glm::vec3({4.0F, 2.F, 5.F});
+  mainCamera.position = cam_init_pos;
 
-  mainCamera.pitch = -0.5F;
+  const float starting_pitch = -0.5F;
+  mainCamera.pitch = starting_pitch;
   mainCamera.yaw = -1.0F;
 
   OE_LOG(ENGINE, INFO, "{}", state.appName);
@@ -73,17 +107,24 @@ int main(void) {
   OE_init();
 
   AssetRegistry<StaticMesh> staticMeshRegistry;
-  auto [default_cube, default_transform] =
-      init_test_cube(&staticMeshRegistry, &renderer);
+  auto [default_cube, default_cube_ent] =
+      init_test_cube(&staticMeshRegistry, &renderer, &registry);
 
-  engine::DrawContext dctx{.OpaqueSurfaces = {default_cube},
-                           .TransparentSurfaces = {}};
+  // auto& tf0 = registry.get<TransformComponent>(default_cube_ent);
+  // OE_LOG(ENGINE, INFO, "registry transform at {}", static_cast<void*>(&tf0));
+  engine::DrawContext dctx{
+      .OpaqueSurfaces = {default_cube},
+      .TransparentSurfaces = {},
+  };
 
   bool bQuit = false;
   // bool resize_requested = false;
   auto last_frame_time = std::chrono::high_resolution_clock::now();
   SDL_Event event;
   float elapsed = 0.0F;
+  const float x_spin_speed = 10.0F;
+  const float y_spin_speed = 15.0F;
+  const float z_spin_speed = 20.0F;
   while (!bQuit) {
     const auto current_time = std::chrono::high_resolution_clock::now();
     const auto delta =
@@ -101,20 +142,27 @@ int main(void) {
       mainCamera.handleInputEvent(event);
 
       // Handle keypress
-      if (event.type == SDL_KEYDOWN) {
-        // Another way to quit
-        if (event.key.keysym.sym == SDLK_ESCAPE) {
-          OE_LOG(ENGINE, INFO, "Quitting...");
-          bQuit = true;
-        }
+      if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
+        OE_LOG(ENGINE, INFO, "Quitting...");
+        bQuit = true;
       }
     }
-    Value x{.type = Value::Type::Number, .number = 0.0F};
-    Value y{.type = Value::Type::Number, .number = 90.0F};
-    Value z{.type = Value::Type::Number, .number = 180.0F};
-    default_transform->set_rotation.call({x, y, z});
-    default_transform->rotation = (default_transform->rotation + 0.5F / 360.0F);
-    default_transform->scale = glm::vec3{cos(elapsed)};
+    // Value x{.type = Value::Type::Number, .number = 0.0F};
+    // Value y{.type = Value::Type::Number, .number = 90.0F};
+    // Value z{.type = Value::Type::Number, .number = 180.0F};
+    runtime.call("update!", {Value::ent(default_cube_ent)});
+    runtime.call("set-rotation!", {
+                                      Value::ent(default_cube_ent),
+                                      Value::num(x_spin_speed * elapsed),
+                                      Value::num(y_spin_speed * elapsed),
+                                      Value::num(z_spin_speed * elapsed),
+                                  });
+
+    // default_cube_ent->set_rotation.invoke({x, y, z});
+    // default_cube_ent->rotation = (default_cube_ent->rotation + 0.5F /
+    // 360.0F); default_cube_ent->scale = glm::vec3{cos(elapsed)};
+    auto& tfcmp = registry.get<TransformComponent>(default_cube_ent);
+    tfcmp.scale = glm::vec3{cos(elapsed)};
     renderer.draw(dctx);
   }
   OE_shutdown();
