@@ -14,8 +14,8 @@
 #include <string>
 
 std::string Filesystem::get_exec_path() {
-  std::filesystem::path exe_path;
 #ifdef PLATFORM_LINUX
+  std::filesystem::path exe_path;
   // Linux: Read /proc/self/exe symlink
   char buffer[PATH_MAX];
   ssize_t count = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
@@ -25,6 +25,7 @@ std::string Filesystem::get_exec_path() {
   }
   buffer[count] = '\0';
   exe_path = std::filesystem::path(buffer);
+  return exe_path.string();
 // Windows: GetModuleFileNameW
 #elif defined(PLATFORM_WINDOWS)
   wchar_t buffer[MAX_PATH];
@@ -34,12 +35,11 @@ std::string Filesystem::get_exec_path() {
     throw std::runtime_error("Failed to resolve executable path on Windows.");
   }
 
-  exe_path = std::filesystem::path(buffer);
+  return std::filesystem::path(buffer).string();
 
 #else
   throw std::runtime_error("Unsupported Platform");
 #endif
-  return exe_path;
 };
 
 bool File::resource(const std::string& filename, File* out_file) {
@@ -86,12 +86,12 @@ bool File::read_text(std::string& out_string) {
 std::string File::get_path() const {
   std::string path;
   switch (this->resource_type) {
-    case PathType::RESOURCE:
+    case PathType::Resource:
       path = Filesystem::get_exec_path() + "/" + this->base_path;
       break;
       // no need to change. caller gave what was requested
-    case PathType::ABSOLUTE:
-    case PathType::USER:
+    case PathType::Absolute:
+    case PathType::User:
       path = this->base_path;
       break;
   }

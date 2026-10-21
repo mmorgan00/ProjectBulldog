@@ -122,15 +122,18 @@ Script::Script(File& filesource) {
 //   }
 // };
 
-Value lookup(std::string text) {
+Value lookup(std::string text, entt::entity ent) {
   // it's a ~~boy!~~ function!
   if (text.ends_with('!')) {
     return Value::string(&text);
   }
+  if (text == "self") {
+    return Value::ent(ent);
+  }
   return Value::null();
 }
 
-Value Runtime::eval(const Node& node) {
+Value Runtime::eval(const Node& node, entt::entity self) {
   switch (node.kind) {
     case Node::Kind::Number:
       OE_LOG(SCRIPTING, DEBUG, "NUMBER {}", node.number);
@@ -138,7 +141,7 @@ Value Runtime::eval(const Node& node) {
       // TODO: This needs the full wiring
     case Node::Kind::Symbol:
       OE_LOG(SCRIPTING, DEBUG, "SYMBOL {}", node.text);
-      return lookup(node.text);  // `self`, variables, etc.
+      return lookup(node.text, self);  // `self`, variables, etc.
     case Node::Kind::List: {
       if (node.children.empty()) {
         return Value::null();
@@ -146,7 +149,7 @@ Value Runtime::eval(const Node& node) {
       Args args;
       OE_LOG(SCRIPTING, DEBUG, "LIST");
       for (size_t i = 1; i < node.children.size(); ++i) {
-        args.push_back(eval(node.children[i]));  // nested calls resolve here
+        args.push_back(eval(node.children[i], self));  // nested calls resolve here
       }
       OE_LOG(SCRIPTING, DEBUG, "CALLING {}", node.children[0].text);
       return call(node.children[0].text, args);

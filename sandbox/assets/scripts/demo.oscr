@@ -1,1 +1,1 @@
-(set-rotation! 1 1 2 3)
+(set-rotation! self 1 2 3)

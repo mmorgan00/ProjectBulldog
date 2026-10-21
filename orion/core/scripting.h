@@ -89,7 +89,7 @@ class Runtime {
   void register_native(std::string name, Callable fxn) {
     natives_[std::move(name)] = std::move(fxn);
   };
-  Value eval(const Node& node);
+  Value eval(const Node& node, entt::entity self);
   Value call(const std::string& name, const Args& args) {
     return natives_.at(name).invoke(args);
   }

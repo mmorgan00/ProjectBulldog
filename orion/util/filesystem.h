@@ -16,7 +16,7 @@
 
 #include <fstream>
 
-enum class PathType : std::uint8_t { RESOURCE, USER, ABSOLUTE };
+enum class PathType : std::uint8_t { Resource, User, Absolute };
 #include <fstream>
 
 DECLARE_LOG_CATEGORY(FILESYSTEM);
@@ -26,7 +26,7 @@ class File {
 
  public:
   // Fallback case
-  File() : resource_type(PathType::ABSOLUTE) {}
+  File() : resource_type(PathType::Absolute) {}
   /**
    * Opens an existing resource file. If the requested file does not exist,
    * returns false
@@ -57,7 +57,7 @@ class File {
   std::string get_path() const;
 
  private:
-  PathType resource_type{PathType::ABSOLUTE};
+  PathType resource_type{PathType::Absolute};
   std::string base_path;
 };
 

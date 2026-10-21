@@ -136,7 +136,7 @@ int main(void) {
     // Value y{.type = Value::Type::Number, .number = 90.0F};
     // Value z{.type = Value::Type::Number, .number = 180.0F};
     for (int i = 0; i < testingScript.nodes.size(); i++) {
-      runtime.eval(testingScript.nodes[i]);
+      runtime.eval(testingScript.nodes[i], default_cube_ent);
     }
     runtime.call("update!", {scripting::Value::ent(default_cube_ent)});
     runtime.call("set-rotation!",
