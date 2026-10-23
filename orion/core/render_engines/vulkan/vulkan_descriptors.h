@@ -3,15 +3,15 @@
 #ifndef ORION_CORE_RENDER_ENGINES_VULKAN_VULKAN_DESCRIPTORS_H_
 #define ORION_CORE_RENDER_ENGINES_VULKAN_VULKAN_DESCRIPTORS_H_
 
+#include <deque>
 #include <span>
 #include <vector>
-#include <deque>
 
 struct DynamicDescriptorAllocator {
  public:
   struct PoolSizeRatio {
     VkDescriptorType type;
-    float ratio;
+    float ratio = 0.0F;
   };
 
   void init(VkDevice device, uint32_t initialSets,
@@ -30,7 +30,7 @@ struct DynamicDescriptorAllocator {
   std::vector<PoolSizeRatio> ratios;
   std::vector<VkDescriptorPool> fullPools;
   std::vector<VkDescriptorPool> readyPools;
-  uint32_t setsPerPool;
+  uint32_t setsPerPool = 0;
 };
 
 struct DescriptorWriter {
@@ -60,7 +60,7 @@ struct DescriptorLayoutBuilder {
 struct DescriptorAllocator {
   struct PoolSizeRatio {
     VkDescriptorType type;
-    float ratio;
+    float ratio = 0.0F;
   };
 
   VkDescriptorPool pool;

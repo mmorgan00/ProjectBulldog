@@ -16,6 +16,7 @@
 #include "orion/core/renderer.h"
 #include "orion/core/renderer_types.h"
 #include "orion/entity/camera.h"
+#include "orion/entity/components/transform.h"
 #include "orion/util/logger.h"
 
 DECLARE_LOG_CATEGORY(VULKAN_ENGINE);
@@ -40,9 +41,10 @@ struct RenderObject {
   uint32_t firstIndex = 0;
   VkBuffer indexBuffer;
 
+  TransformComponent* transform = nullptr;
   MaterialInstance* material = nullptr;
 
-  glm::mat4 transform;
+  // glm::mat4 transform;
   VkDeviceAddress vertexBufferAddress;
 };
 
@@ -87,7 +89,6 @@ struct EngineState {
 class LoadedGLTF;  // Engine needs to know about it for storing. Declared later
 
 class VulkanEngine : public RenderEngine {
-
   std::vector<GPUMeshBuffers> uploadedMeshBuffers;
   bool _isInitialized{false};
   int _frameNumber{0};

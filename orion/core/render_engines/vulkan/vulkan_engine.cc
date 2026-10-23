@@ -17,6 +17,11 @@
 #include <utility>
 #include <vector>
 
+#include "orion/entity/components/transform.h"
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
+
 #include "SDL_video.h"
 #include "orion/core/engine_types.h"
 #include "orion/core/render_engines/vulkan/vulkan_descriptors.h"
@@ -210,7 +215,7 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd, engine::DrawContext ctx) {
 
     GPUDrawPushConstants pushConstants;
     pushConstants.vertexBuffer = draw.vertexBufferAddress;
-    pushConstants.worldMatrix = draw.transform;
+    pushConstants.worldMatrix = draw.transform->getMatrix();
     vkCmdPushConstants(cmd, draw.material->pipeline->layout,
                        VK_SHADER_STAGE_VERTEX_BIT, 0,
                        sizeof(GPUDrawPushConstants), &pushConstants);
@@ -796,16 +801,17 @@ void VulkanEngine::init_default_pipeline() {
   VkShaderModule triangleFragShader;
   if (!vkutil::load_shader_module(
           std::string(this->state.shadersPath + "/default.frag.spv").c_str(),
-                                  _device, &triangleFragShader)) {
+          _device, &triangleFragShader)) {
     fmt::print("Error when building the fragment shader \n");
   } else {
     fmt::print("Triangle fragment shader succesfully loaded \n");
   }
 
   VkShaderModule triangleVertexShader;
-  if (!vkutil::load_shader_module(std::string(this->state.shadersPath +
-                                  "/default_mesh.vert.spv").c_str(),
-                                  _device, &triangleVertexShader)) {
+  if (!vkutil::load_shader_module(
+          std::string(this->state.shadersPath + "/default_mesh.vert.spv")
+              .c_str(),
+          _device, &triangleVertexShader)) {
     fmt::print("Error when building the vertex shader \n");
   } else {
     fmt::print("Triangle vertex shader succesfully loaded \n");
@@ -880,7 +886,7 @@ void VulkanEngine::init_background_pipeline() {
   // TODO: Load this properly?
   if (!vkutil::load_shader_module(
           std::string(this->state.shadersPath + "gradient.comp.spv").c_str(),
-                                  _device, &computeDrawShader)) {
+          _device, &computeDrawShader)) {
     fmt::print("Error when building the compute shader \n");
   }
 
@@ -897,7 +903,6 @@ void VulkanEngine::init_background_pipeline() {
   computePipelineCreateInfo.pNext = nullptr;
   computePipelineCreateInfo.layout = _gradientPipelineLayout;
   computePipelineCreateInfo.stage = stageinfo;
-
 
   VK_CHECK(vkCreateComputePipelines(_device, VK_NULL_HANDLE, 1,
                                     &computePipelineCreateInfo, nullptr,
@@ -943,9 +948,10 @@ RenderObject* VulkanEngine::uploadMesh(engine::MeshAsset mesh) {
       .firstIndex = 0,  // TODO: Fine for now, but probably will break later if
                         // 'packing' occurs
       .indexBuffer = gpuBuffers.indexBuffer.buffer,  // VkBuffer handle
-      .material = &defaultData,                      // Fallback material
-      .transform = glm::mat4{1.0F},
-      .vertexBufferAddress = gpuBuffers.vertexBufferAddress};
+      .transform = new TransformComponent(),
+      .material = &defaultData,  // Fallback material
+      .vertexBufferAddress = gpuBuffers.vertexBufferAddress,
+  };
 
   return robj;
 }
@@ -1085,8 +1091,17 @@ void MeshNode::Draw(const glm::mat4& topMatrix, engine::DrawContext& ctx) {
     def.firstIndex = s.startIndex;
     def.indexBuffer = mesh->meshBuffers.indexBuffer.buffer;
     def.material = &s.material->data;
-
-    def.transform = nodeMatrix;
+    glm::vec3 scale;
+    glm::vec3 translation;
+    glm::vec3 _skew;
+    glm::quat orientation;
+    glm::vec4 _perspective;
+    glm::decompose(nodeMatrix, scale, orientation, translation, _skew,
+                   _perspective);
+    glm::vec3 euler = glm::eulerAngles(orientation);
+    def.transform->rotation = euler;
+    def.transform->position = translation;
+    def.transform->scale = scale;
     def.vertexBufferAddress = mesh->meshBuffers.vertexBufferAddress;
 
     ctx.OpaqueSurfaces.push_back(&def);
@@ -1271,15 +1286,16 @@ void VulkanEngine::immediate_submit(
 //< GLTFMetallic_Roughness
 void GLTFMetallic_Roughness::build_pipelines(VulkanEngine* engine) {
   VkShaderModule meshFragShader;
-  if (!vkutil::load_shader_module(std::string(engine->state.shadersPath + "/mesh.frag.spv").c_str(),
-                                  engine->_device, &meshFragShader)) {
+  if (!vkutil::load_shader_module(
+          std::string(engine->state.shadersPath + "/mesh.frag.spv").c_str(),
+          engine->_device, &meshFragShader)) {
     fmt::println("Error when building the mesh fragment shader module");
   }
 
   VkShaderModule meshVertexShader;
   if (!vkutil::load_shader_module(
           std::string(engine->state.shadersPath + "/mesh.vert.spv").c_str(),
-                                  engine->_device, &meshVertexShader)) {
+          engine->_device, &meshVertexShader)) {
     fmt::println("Error when building the mesh vertex shader module");
   }
 

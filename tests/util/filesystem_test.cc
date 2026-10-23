@@ -1,6 +1,3 @@
-#ifndef TESTS_UTIL_FILESYSTEM_TEST_CC_
-#define TESTS_UTIL_FILESYSTEM_TEST_CC_
-
 #include "orion/util/filesystem.h"
 
 #include <gtest/gtest.h>
@@ -14,6 +11,5 @@ TEST(Filesystem, ResourceFilesCanBeFound) {
 
 TEST(Filesystem, NonexistantFiles) {
   File test_file;
-  EXPECT_EQ(File::resource("not-existing-test.oes", &test_file), true);
+  EXPECT_NE(File::resource("not-existing-test.oes", &test_file), true);
 }
-#endif  // TESTS_UTIL_FILESYSTEM_TEST_CC_

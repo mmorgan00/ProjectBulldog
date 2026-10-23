@@ -70,7 +70,7 @@ std::optional<AllocatedImage> load_image(VulkanEngine* engine,
               stbi_image_free(data);
             }
           },
-          [&](fastgltf::sources::BufferView& view) {
+          [&](const fastgltf::sources::BufferView& view) {
             auto& bufferView = asset.bufferViews[view.bufferViewIndex];
             auto& buffer = asset.buffers[bufferView.bufferIndex];
 

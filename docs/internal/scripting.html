@@ -1,0 +1,117 @@
+<h1 id="scripting-in-orion-engine">Scripting in Orion Engine</h1>
+<p>20-10-2026</p>
+<h2 id="overview">Overview</h2>
+<p>Scripting is done via a Scheme-like language, and wired into the
+engine using OScriptable components.</p>
+<h3 id="alternatives">Alternatives</h3>
+<p>Python, Lua, and ‘roll it yourself’ languages were considered, and
+Lua is still a contender should Lisp not work out. Python was dismissed
+as too heavy, ‘roll it yourself’ ruled out because I would like to ship
+a game <em>at some point</em>.</p>
+<h3 id="why">Why?</h3>
+<ul>
+<li>Because it felt like the kind of ‘hard way’/edgy thing I seem to
+enjoy subjecting myself too.</li>
+<li>Because I saw this little company Naughty Dog did something similar
+(GOAL) for Crash Bandicoot and that might’ve been my favorite PS2 game I
+owned</li>
+</ul>
+<h3 id="ackshwally">Ackshwally…</h3>
+<p>Yeah I know it’s not ‘really’ Lisp and not ‘really’ Scheme. You can
+put a detailed description of why I should be burnt at the stake at
+<code>/dev/null</code></p>
+<p>For now this means no LSP, no debugger, no…anything really. “Custom
+bindings are cool” and “I did the start of the hard thing” are about all
+it has going for it, and I’ve made my peace with that for now. If I
+wanted comfy and polished tools I’d have grabbed Unity and accepted a
+splash screen, or Godot and embraced FLOSS. The point of Orion is to
+<em>not</em> be an off the shelf engine, and custom scripting is a line
+I am drawing to not pull in a library for.</p>
+<h2 id="engine-usage">Engine usage</h2>
+<p>Parsing Lisp is something you could’ve had to do in a CS degree
+course. I didn’t have to quite do it exactly, but our spreadsheet
+assignment in CS 3500 had a similar enough requirement, this felt like
+it’d be a no brainer.</p>
+<p>I was only a little bit wrong.</p>
+<h3 id="loading">Loading</h3>
+<ol start="0" type="1">
+<li><p>Scripts for now have to be located in
+/sandbox/assets/scripts/<yourscriptname>.oscr. <code>.oscr</code> for
+now is ‘orion script’. Super clever</p></li>
+<li><p>Scripts are read character by character from the source file,
+into a buffer (<code>std::string</code>).</p></li>
+<li><p>The buffer is then ‘tokenized’.</p>
+<ul>
+<li>I don’t love the term (<em>thanks Claude</em>) but naming things is
+hard and it’s pretty accurate to what it’s doing. Tokens in this case
+are each ‘unit’. Map to a <code>Value</code>, but that’s a runtime
+invocation concept, not a data holding concept.</li>
+</ul></li>
+<li><p>Tokens then get parsed into our ‘Call Tree’. It’s in quotes
+because I wanted to call it a Call Stack which feels less made up, but
+stack implies up and down only and our tree has a left to right part
+too.</p></li>
+<li><p>Call Tree gets stored as a vector of Nodes, and then at execution
+time the vector is iterated over, with each Node tree getting traversed.
+This gives us both “breadth and depth” script handling at the cost of
+single digits worth of type complexity.</p></li>
+</ol>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">; line numbers are made up and pretend they aren&#39;t there, but it&#39;ll help documenting</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">; Update</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> (</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span> (set-rotation! <span class="dv">0</span> <span class="dv">0</span> (mult! <span class="kw">time</span> <span class="fl">1.5</span>))</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="dv">3</span> )</span></code></pre></div>
+<h3 id="practical-example">Practical example</h3>
+<ol type="1">
+<li>line 1 is read because it’s first. Tokenizer sees a ‘(’, which
+indicates a) the last token we read is over, and b) a new token
+immediately follows this. So flush (push) the token you were building
+into our vector as a new entry, and push the ‘(’ so we keep the
+delimiter.</li>
+<li>Starting line 2. Repeat step 1. Note we have not made any special
+logic around the fact we’ve entered 2 lists. That is not a concern
+presently, we’re just breaking the script up so we can properly parse it
+later.</li>
+<li><code>set-rotation!</code> gets read in entirety, then the traversal
+finds a space, so <code>set-rotation!</code> gets pushed as it’s own
+token. No further logic yet around function calls or otherwise.</li>
+<li>Repeat until third ‘)’. We should end up with a vector of strings
+that looks like (, (, set-rotation!, 0, 0, (, mult!, time,
+1.5,),),)</li>
+<li>Now that we have our handy dandy vector of tokens, we need to
+<em>do</em> something with it. Parse the tokens into the actual Node
+tree</li>
+<li>Tokens are iterated over again, but with different rules.
+<ul>
+<li>‘(’ and ‘)’ now indicate lists, not just a token to save. Each new
+token is recursively parsed, and if a non list marker is found, it’s
+parsed as either a symbol or a number. No distinction for variables is
+made in symbols.</li>
+<li>At the end, you end up with a top level node with a tree to walk
+down.</li>
+</ul></li>
+</ol>
+<p>Tree representation</p>
+<pre><code>Top Node: &#39;(&#39; node 1
+children: &#39;(&#39; // from line 2, calling this node 2
+node 2 children: &#39;set-rotation!&#39;, &#39;0&#39;, &#39;0&#39;, &#39;(&#39; // oh look another list, clal this node 3
+Node 3 children: &#39;mult!&#39;, &#39;time&#39;, &#39;1.5&#39;</code></pre>
+<p>not depicted: type parsing, but you can figure that out looking at
+the code pretty well</p>
+<ol start="7" type="1">
+<li>Now the evaluation step. Once again, recursion.</li>
+</ol>
+<ul>
+<li>Switch based on the kind of node you just found. If it’s a list, (a
+‘(’ we found earlier), evaluate each child iteratively. If you find
+another list, step down, build args, evalute, then return up.</li>
+</ul>
+<p>From our example above:</p>
+<p>node 1 starts a new args list. args list gets build with set
+rotation, 0, 0, and then another ‘(’, so time to recurse down.</p>
+<p>Node 2 starts building it’s args list, finds mult!, time, and 1.5.
+list ends, so we hit our ‘call’ step, for mult! time, and 1.5.</p>
+<p>Assume mult! actually works and time is 2, so we get the value of 3,
+which gets passed up to node2’s evaluation.</p>
+<pre><code>Node then hits call for set-rotation, 0, 0, 3, which assume it does what it&#39;s supposed to, then returns a Value::null since there&#39;s nothing to return iwth a set-rotation, and our script invocation is over.</code></pre>
