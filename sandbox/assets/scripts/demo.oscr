@@ -1,1 +1,2 @@
-(set-rotation! self 1 2 3)
+(set-rotation! self 0 (mult! elapsed_time 5) 0)
+(set-position! self 0 (add! (get-position-y! self) -0.0025) 0)

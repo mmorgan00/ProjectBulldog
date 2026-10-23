@@ -99,7 +99,7 @@ int main(void) {
   File script_test;
   File::resource(state.assetsPath + "/scripts/demo.oscr", &script_test);
   scripting::Script testingScript(script_test);
-  scripting::OCScriptable test_scriptable;
+  scripting::ScriptComponent test_scriptable;
   // test_scriptable.load(script_test, default_cube_ent);
 
   bool bQuit = false;
@@ -107,9 +107,6 @@ int main(void) {
   auto last_frame_time = std::chrono::high_resolution_clock::now();
   SDL_Event event;
   float elapsed = 0.0F;
-  const float x_spin_speed = 10.0F;
-  const float y_spin_speed = 15.0F;
-  const float z_spin_speed = 20.0F;
   while (!bQuit) {
     const auto current_time = std::chrono::high_resolution_clock::now();
     const auto delta =
@@ -124,7 +121,7 @@ int main(void) {
       if (event.type == SDL_QUIT) {
         bQuit = true;
       };
-      mainCamera.handleInputEvent(event);
+      // mainCamera.handleInputEvent(event);
 
       // Handle keypress
       if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
@@ -132,26 +129,15 @@ int main(void) {
         bQuit = true;
       }
     }
-    // Value x{.type = Value::Type::Number, .number = 0.0F};
-    // Value y{.type = Value::Type::Number, .number = 90.0F};
-    // Value z{.type = Value::Type::Number, .number = 180.0F};
     for (int i = 0; i < testingScript.nodes.size(); i++) {
-      runtime.eval(testingScript.nodes[i], default_cube_ent);
-    }
-    runtime.call("update!", {scripting::Value::ent(default_cube_ent)});
-    runtime.call("set-rotation!",
-                 {
-                     scripting::Value::ent(default_cube_ent),
-                     scripting::Value::num(x_spin_speed * elapsed),
-                     scripting::Value::num(y_spin_speed * elapsed),
-                     scripting::Value::num(z_spin_speed * elapsed),
-                 });
+      scripting::EvalContext eval_ctx{
+          .self = default_cube_ent,
+          .delta_time = delta_time,
+          .elapsed_time = elapsed,
+      };
 
-    // default_cube_ent->set_rotation.invoke({x, y, z});
-    // default_cube_ent->rotation = (default_cube_ent->rotation + 0.5F /
-    // 360.0F); default_cube_ent->scale = glm::vec3{cos(elapsed)};
-    auto& tfcmp = registry.get<TransformComponent>(default_cube_ent);
-    tfcmp.scale = glm::vec3{cos(elapsed)};
+      runtime.eval(testingScript.nodes[i], eval_ctx);
+    }
     renderer.draw(dctx);
   }
   OE_shutdown();

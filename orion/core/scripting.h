@@ -67,12 +67,17 @@ struct CallEntry {
 
 using Args = std::vector<Value>;
 
-inline void require_args(const Args& args, size_t n, const char* fxn) {
+inline void requireArgs(const Args& args, size_t n, const char* fxn) {
   if (args.size() != n) {
     throw ScriptError(std::string(fxn) + ": expected " + std::to_string(n) +
                       " args, got " + std::to_string(args.size()));
   }
 }
+struct EvalContext {
+  entt::entity self;
+  float delta_time = 0;
+  float elapsed_time = 0;
+};
 
 struct Callable {
   std::function<Value(const Args&)> invoke;
@@ -86,10 +91,10 @@ struct Node {
 class Runtime {
  public:
   void initialize(entt::registry* registry);
-  void register_native(std::string name, Callable fxn) {
+  void registerNative(std::string name, Callable fxn) {
     natives_[std::move(name)] = std::move(fxn);
   };
-  Value eval(const Node& node, entt::entity self);
+  Value eval(const Node& node, EvalContext ctx);
   Value call(const std::string& name, const Args& args) {
     return natives_.at(name).invoke(args);
   }
@@ -104,7 +109,7 @@ struct Script {
   explicit Script(File& filesource);
   Script() = default;
 };
-class OCScriptable {
+class ScriptComponent {
   Script script;
 
  public:

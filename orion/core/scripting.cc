@@ -5,11 +5,12 @@
 DECLARE_LOG_CATEGORY(SCRIPTING);
 namespace scripting {
 void Runtime::initialize(entt::registry* registry) {
-  this->register_native(
+  // Transformations
+  this->registerNative(
       "set-rotation!",
       Callable{
           [registry](const Args& args) -> Value {
-            require_args(args, 4, "set-rotation!");
+            requireArgs(args, 4, "set-rotation!");
             auto& trans_cmp =
                 registry->get<TransformComponent>(args[0].as_entity());
             trans_cmp.rotation = {
@@ -20,37 +21,123 @@ void Runtime::initialize(entt::registry* registry) {
             return Value::null();
           },
       });
-  this->register_native("update!",
-                        Callable{
-                            [registry](const Args& args) -> Value {
-                              require_args(args, 1, "update!");
-                              // OE_LOG(SCRIPTING, DEBUG, "Update called for
-                              // {}",
-                              //        static_cast<uint32_t>(args[0].as_entity()));
-                              return Value::null();
-                            },
-                        }
+  this->registerNative(
+      "set-position!",
+      Callable{
+          [registry](const Args& args) -> Value {
+            requireArgs(args, 4, "set-position!");
+            auto& trans_cmp =
+                registry->get<TransformComponent>(args[0].as_entity());
+            trans_cmp.position = {
+                static_cast<float>(args[1].as_number()),
+                static_cast<float>(args[2].as_number()),
+                static_cast<float>(args[3].as_number()),
+            };
 
-  );
+            return Value::null();
+          },
+      });
+  this->registerNative(
+      "get-position-x!",
+      Callable{
+          [registry](const Args& args) -> Value {
+            requireArgs(args, 1, "get-position-x!");
+            const TransformComponent& trans_cmp =
+                registry->get<TransformComponent>(args[0].as_entity());
+            return Value::num(trans_cmp.position.x);
+          },
+      });
+  this->registerNative(
+      "get-position-y!",
+      Callable{
+          [registry](const Args& args) -> Value {
+            requireArgs(args, 1, "get-position-x!");
+            const TransformComponent& trans_cmp =
+                registry->get<TransformComponent>(args[0].as_entity());
+            return Value::num(trans_cmp.position.y);
+          },
+      });
+
+  this->registerNative(
+      "get-position-z!",
+      Callable{
+          [registry](const Args& args) -> Value {
+            requireArgs(args, 1, "get-position-x!");
+            const TransformComponent& trans_cmp =
+                registry->get<TransformComponent>(args[0].as_entity());
+            return Value::num(trans_cmp.position.z);
+          },
+      });
+  this->registerNative(
+      "set-scale!", Callable{
+                        [registry](const Args& args) -> Value {
+                          requireArgs(args, 4, "set-scale!");
+                          auto& trans_cmp = registry->get<TransformComponent>(
+                              args[0].as_entity());
+                          trans_cmp.scale = {
+                              static_cast<float>(args[1].as_number()),
+                              static_cast<float>(args[2].as_number()),
+                              static_cast<float>(args[3].as_number()),
+                          };
+
+                          return Value::null();
+                        },
+                    });
+
+  // Update
+  // TODO: This needs to be revisted so that we only call an update function per
+  // loop, and can support other things like a onSpawn!/onDestroy! type of fxns
+  // this->registerNative("update!",
+  //                      Callable{
+  //                          [registry](const Args& args) -> Value {
+  //                            requireArgs(args, 1, "update!");
+  //                            return Value::null();
+  //                          },
+  //                      }
+
+  // );
+  // Arithmetic
+  this->registerNative("mult!", Callable{
+                                    [registry](const Args& args) -> Value {
+                                      requireArgs(args, 2, "mult!");
+                                      return Value::num(args[0].as_number() *
+                                                        args[1].as_number());
+                                    },
+                                });
+  this->registerNative("add!", Callable{
+                                   [registry](const Args& args) -> Value {
+                                     requireArgs(args, 2, "add!");
+                                     return Value::num(args[0].as_number() +
+                                                       args[1].as_number());
+                                   },
+                               });
+  this->registerNative(
+      "subtract!",
+      Callable{
+          [registry](const Args& args) -> Value {
+            requireArgs(args, 2, "subtract!");
+            return Value::num(args[0].as_number() - args[1].as_number());
+          },
+      });
 };
 
 std::vector<std::string> tokenize(const std::string& src) {
   std::vector<std::string> tokens;
-  std::string cur;
+  std::string cur_token;
   auto flush = [&] {
-    if (!cur.empty()) {
-      tokens.push_back(cur);
-      cur.clear();
+    if (!cur_token.empty()) {
+      tokens.push_back(cur_token);
+      cur_token.clear();
     }
   };
-  for (char c : src) {
-    if (c == '(' || c == ')') {
+  for (char cur_char : src) {
+    if (cur_char == '(' || cur_char == ')') {
       flush();
-      tokens.emplace_back(1, c);
-    } else if (std::isspace(static_cast<unsigned char>(c))) {
+      tokens.emplace_back(1, cur_char);
+    } else if (std::isspace(static_cast<unsigned char>(cur_char))) {
       flush();
     } else {
-      cur += c;
+      cur_token += cur_char;
     }
   }
   flush();
@@ -94,46 +181,24 @@ Script::Script(File& filesource) {
   }
 }
 
-// void OCScriptable::load(File& filesource, entt::entity ent) {
-//   std::string src;
-//   filesource.read_text(src);
-//   // Iterate over the script, parsing '(',')', and ops
-//   std::string curr_symbol;
-//   for (size_t i = 0; i < src.length(); i++) {
-//     // Whitespace. end of a symbol
-//     if (std::isspace(static_cast<unsigned char>(src[i]))) {
-//       if (!curr_symbol.empty()) {
-//         //
-//       }
-//       OE_LOG(SCRIPTING, DEBUG, "Parser found whitespace");
-//       continue;
-//     }
-//     // `(` - start of an expression
-//     if (src[i] == '(') {
-//       OE_LOG(SCRIPTING, DEBUG, "Parser found start of expression");
-//       continue;
-//     }
-//     if (src[i] == ')') {
-//       OE_LOG(SCRIPTING, DEBUG, "Parser found end of expression");
-//       continue;
-//     }
-//     // Otherwise, Value. `!` will indicate expression, so have to read full
-//     word OE_LOG(SCRIPTING, DEBUG, "Parser found Value {}", src[i]);
-//   }
-// };
-
-Value lookup(std::string text, entt::entity ent) {
+Value lookup(std::string text, EvalContext ctx) {
   // it's a ~~boy!~~ function!
   if (text.ends_with('!')) {
     return Value::string(&text);
   }
   if (text == "self") {
-    return Value::ent(ent);
+    return Value::ent(ctx.self);
+  }
+  if (text == "delta_time") {
+    return Value::num(ctx.delta_time);
+  }
+  if (text == "elapsed_time") {
+    return Value::num(ctx.elapsed_time);
   }
   return Value::null();
 }
 
-Value Runtime::eval(const Node& node, entt::entity self) {
+Value Runtime::eval(const Node& node, EvalContext ctx) {
   switch (node.kind) {
     case Node::Kind::Number:
       OE_LOG(SCRIPTING, DEBUG, "NUMBER {}", node.number);
@@ -141,7 +206,7 @@ Value Runtime::eval(const Node& node, entt::entity self) {
       // TODO: This needs the full wiring
     case Node::Kind::Symbol:
       OE_LOG(SCRIPTING, DEBUG, "SYMBOL {}", node.text);
-      return lookup(node.text, self);  // `self`, variables, etc.
+      return lookup(node.text, ctx);  //`self`, variables, etc.
     case Node::Kind::List: {
       if (node.children.empty()) {
         return Value::null();
@@ -149,7 +214,8 @@ Value Runtime::eval(const Node& node, entt::entity self) {
       Args args;
       OE_LOG(SCRIPTING, DEBUG, "LIST");
       for (size_t i = 1; i < node.children.size(); ++i) {
-        args.push_back(eval(node.children[i], self));  // nested calls resolve here
+        args.push_back(
+            eval(node.children[i], ctx));  // nested calls resolve here
       }
       OE_LOG(SCRIPTING, DEBUG, "CALLING {}", node.children[0].text);
       return call(node.children[0].text, args);
