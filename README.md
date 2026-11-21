@@ -179,3 +179,27 @@ cmake --build .
 #### Mac
 
 - A very long way down the road. At some point I'll investigate, but this is not something I anticipate happening for a while
+
+
+### Regarding AI
+
+AI in game development is still polarizing as of writing this (11/21/26). I didn't feel the need to clarify as I felt the breadcrumbs I have of surely-awful code in some spots and updating this section in my README while scrolling past the engine API section for the entrypoint that I know is out of date, or the roadmap section I've since replaced with my Issues page might convince you.
+
+However, [the Big Walk event](https://kotaku.com/house-igf-awards-big-walk-gen-ai-llm-untitled-goose-game-2000755488) (this is not an endorsement of kotaku) made me feel I had to spell it out explicitly.
+
+So, here is my disclaimer on how AI has and will be used on this project.
+
+1. **All code as you see it today was entered into my editor by me.**
+
+I do not use claude code or copilot or other agentic coding tools. I use [Doom Emacs](https://github.com/doomemacs/core) as my editor, and some day will link my dotfiles.
+    
+That said...
+
+2. **I cannot guarantee all of the code you see was not 'touched' by AI in some way.**
+
+I have had bugs, I have had code that didn't compile, I have not known how something worked. So, like someone who learned to code before ChatGPT or whatever the first one was launched, I googled what was wrong. What is contained in those search results, be it a stack overflow post or a blog detailing how to do something, I cannot guarantee how it was produced as that is out of my control. 
+
+
+3. **Pipeline assets are to be human authored.**
+
+I do not have any assets today. I have some basic shaders from the vulkan tutorial I was following, and a 'procedural' cube that spins as of today. When proper assets do come: my family is convinced I have a hidden art skill I have not embraced, and so I owe it to them to at least try.
