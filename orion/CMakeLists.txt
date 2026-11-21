@@ -35,6 +35,7 @@ add_library(orion STATIC
   entity/components/transform.h
   core/scripting.h
   core/scripting.cc
+  entity/components/render.h
 )
 
 

@@ -3,8 +3,6 @@
 
 #include "orion/entry.h"
 
-#include <cmath>
-
 #include "SDL_events.h"
 #include "orion/core/asset_registry.h"
 #include "orion/core/render_engines/vulkan/vulkan_engine.h"
@@ -12,12 +10,12 @@
 #include "orion/core/resource_types/static_mesh.h"
 #include "orion/core/scripting.h"
 #include "orion/entity/camera.h"
+#include "orion/entity/components/render.h"
 #include "orion/entity/components/transform.h"
 #include "orion/util/logger.h"
 
-std::tuple<RenderObject*, entt::entity> init_test_cube(
-    AssetRegistry<StaticMesh>* assreg, Renderer* renderer,
-    entt::registry* entreg) {
+void init_test_cube(AssetRegistry<StaticMesh>* assreg, Renderer* renderer,
+                    entt::registry* entreg) {
   DECLARE_LOG_CATEGORY(ENGINE_TEST);
   Primitive cube = primitives::cube();
   StaticMesh cube_sm = StaticMesh{
@@ -35,9 +33,12 @@ std::tuple<RenderObject*, entt::entity> init_test_cube(
 
   entt::entity entity = entreg->create();
   auto& transform = entreg->emplace<TransformComponent>(entity);
+  auto& render_cmp = entreg->emplace<RenderComponent>(entity);
   RenderObject* test_mesh =
       renderer->loadStaticMesh(assreg->get(handle), &transform);
-  return {test_mesh, entity};
+
+  render_cmp.handle = test_mesh;
+  return;
 }
 
 int main(void) {
@@ -86,21 +87,16 @@ int main(void) {
   OE_init();
 
   AssetRegistry<StaticMesh> staticMeshRegistry;
-  auto [default_cube, default_cube_ent] =
-      init_test_cube(&staticMeshRegistry, &renderer, &registry);
+  init_test_cube(&staticMeshRegistry, &renderer, &registry);
 
-  // auto& tf0 = registry.get<TransformComponent>(default_cube_ent);
-  // OE_LOG(ENGINE, INFO, "registry transform at {}", static_cast<void*>(&tf0));
-  engine::DrawContext dctx{
-      .OpaqueSurfaces = {default_cube},
-      .TransparentSurfaces = {},
-  };
-
+  // ------------- ECS VIEWS ----------------------
+  auto render_view = registry.view<RenderComponent>();
+  auto transform_view = registry.view<TransformComponent>();
+  // ---------------------------------------------
   File script_test;
   File::resource(state.assetsPath + "/scripts/demo.oscr", &script_test);
   scripting::Script testingScript(script_test);
   scripting::ScriptComponent test_scriptable;
-  // test_scriptable.load(script_test, default_cube_ent);
 
   bool bQuit = false;
   // bool resize_requested = false;
@@ -129,14 +125,26 @@ int main(void) {
         bQuit = true;
       }
     }
-    for (int i = 0; i < testingScript.nodes.size(); i++) {
-      scripting::EvalContext eval_ctx{
-          .self = default_cube_ent,
-          .delta_time = delta_time,
-          .elapsed_time = elapsed,
-      };
+    // TODO: Should be scriptable view, not transform. Placeholder
+    for (entt::entity entity : transform_view) {
+      for (int i = 0; i < testingScript.nodes.size(); i++) {
+        scripting::EvalContext eval_ctx{
+            .self = entity,
+            .delta_time = delta_time,
+            .elapsed_time = elapsed,
+        };
 
-      runtime.eval(testingScript.nodes[i], eval_ctx);
+        runtime.eval(testingScript.nodes[i], eval_ctx);
+      }
+    }
+    engine::DrawContext dctx{
+        .OpaqueSurfaces = {},
+        .TransparentSurfaces = {},
+    };
+
+    for (entt::entity entity : render_view) {
+      auto& render_cmp = render_view.get<RenderComponent>(entity);
+      dctx.OpaqueSurfaces.push_back(render_cmp.handle);
     }
     renderer.draw(dctx);
   }
